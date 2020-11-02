@@ -1,0 +1,190 @@
+.Landscape-ToastNotifier {
+  position: absolute;
+  z-index: 1;
+}
+
+.Landscape-ToastNotifier-close-button {
+  border-radius: 50%;
+  color: rgb(80, 80, 80);
+  cursor: pointer;
+  font-size: 80%;
+  height: 1em;
+  position: relative;
+  right: 0.2vmax;
+  text-align: center;
+  top: 0.2vmax;
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    opacity 0.2s,
+    text-shadow 0.2s,
+    transform 0.2s
+  ;
+  width: 1em;
+}
+
+.Landscape-ToastNotifier-close-button::before {
+  content: '✖';
+}
+
+.Landscape-ToastNotifier-notification:not(:hover) .Landscape-ToastNotifier-close-button {
+  opacity: 0;
+}
+
+.Landscape-ToastNotifier-close-button:hover {
+  background-color: rgba(180, 180, 180, 0.5);
+  color: rgb(248, 248, 248);
+  text-shadow: 0.02em 0.02em rgba(20, 20, 20, 0.5);
+  transform: scale(1.125);
+}
+
+.Landscape-ToastNotifier-close-button:active,
+.Landscape-ToastNotifier-close-button.Landscape-active {
+  background-color: rgba(255, 255, 255, 0.95);
+  color: rgb(20, 180, 240);
+  text-shadow: 0.02em 0.02em rgba(20, 20, 20, 0.5);
+  transform: scale(1.1);
+}
+
+.Landscape-ToastNotifier-notification {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 0.5vmin;
+  box-shadow: 0.2vmin 0.2vmin 0.15vmin rgba(50, 50, 50, 0.35);
+  color: rgb(50, 50, 50);
+  display: flex;
+  margin: 0.4vh 0.2vw;
+  max-height: 10vh;
+  overflow: hidden;
+}
+
+.Landscape-ToastNotifier-notification-container {
+  position: relative;
+  transition:
+    opacity 1s,
+    transform 1s ease-in
+  ;
+  z-index: 2;
+}
+
+.Landscape-ToastNotifier-notification-container.Landscape-ToastNotifier-hidden {
+  opacity: 0;
+  z-index: 1;
+}
+
+.Landscape-ToastNotifier-notification-container.Landscape-ToastNotifier-hidden .Landscape-ToastNotifier-notification-spacer {
+  max-height: 0;
+}
+
+.Landscape-ToastNotifier-notification-text {
+  overflow-y: auto;
+  padding: 0.2em;
+  width: 100%;
+}
+
+.Landscape-ToastNotifier-notification-container.Landscape-ToastNotifier-hidden .Landscape-ToastNotifier-notification-text {
+  /* hide the scrollbar during the transition */
+  overflow-y: hidden;
+}
+
+.Landscape-ToastNotifier-notification-spacer {
+  max-height: 10vh;
+  max-width: 35vw;
+  transition: max-height 1s ease-in;
+}
+
+.Landscape-ToastNotifier-queue {
+  display: flex;
+  overflow: hidden;
+  max-height: 100vh;
+}
+
+.Landscape-ToastNotifier-status-indicator {
+  border-right: 0.02vmin solid rgba(120, 120, 120, 0.2);
+  width: 0.35em;
+}
+
+.Landscape-ToastNotifier-status-indicator.CRITICAL_ERROR {
+  background-color: rgb(240, 20, 20);
+}
+
+.Landscape-ToastNotifier-status-indicator.DEBUG {
+  background-color: rgb(80, 40, 220);
+}
+
+.Landscape-ToastNotifier-status-indicator.ERROR {
+  background-color: rgb(200, 20, 20);
+}
+
+.Landscape-ToastNotifier-status-indicator.INFORMATION {
+  background-color: rgb(20, 180, 220);
+}
+
+.Landscape-ToastNotifier-status-indicator.OK {
+  background-color: rgb(20, 220, 80);
+}
+
+.Landscape-ToastNotifier-status-indicator.WARNING {
+  background-color: rgb(220, 160, 20);
+}
+
+
+/* bottom-left */
+
+.Landscape-ToastNotifier.Landscape-ToastNotifier-bottom-left {
+  bottom: 0;
+  left: 0;
+}
+
+.Landscape-ToastNotifier.Landscape-ToastNotifier-bottom-left .Landscape-ToastNotifier-queue {
+  flex-direction: column;
+}
+
+.Landscape-ToastNotifier.Landscape-ToastNotifier-bottom-left .Landscape-ToastNotifier-notification-container.Landscape-ToastNotifier-hidden {
+  transform: translateY(100%);
+}
+
+/* bottom-right */
+
+.Landscape-ToastNotifier.Landscape-ToastNotifier-bottom-right {
+  bottom: 0;
+  right: 0;
+}
+
+.Landscape-ToastNotifier.Landscape-ToastNotifier-bottom-right .Landscape-ToastNotifier-queue {
+  flex-direction: column;
+}
+
+.Landscape-ToastNotifier.Landscape-ToastNotifier-bottom-right .Landscape-ToastNotifier-notification-container.Landscape-ToastNotifier-hidden {
+  transform: translateY(100%);
+}
+
+/* top-left */
+
+.Landscape-ToastNotifier.Landscape-ToastNotifier-top-left {
+  left: 0;
+  top: 0;
+}
+
+.Landscape-ToastNotifier.Landscape-ToastNotifier-top-left .Landscape-ToastNotifier-queue {
+  flex-direction: column-reverse;
+}
+
+.Landscape-ToastNotifier.Landscape-ToastNotifier-top-left .Landscape-ToastNotifier-notification-container.Landscape-ToastNotifier-hidden {
+  transform: translateY(-100%);
+}
+
+
+/* top-right */
+
+.Landscape-ToastNotifier.Landscape-ToastNotifier-top-right {
+  right: 0;
+  top: 0;
+}
+
+.Landscape-ToastNotifier.Landscape-ToastNotifier-top-right .Landscape-ToastNotifier-queue {
+  flex-direction: column-reverse;
+}
+
+.Landscape-ToastNotifier.Landscape-ToastNotifier-top-right .Landscape-ToastNotifier-notification-container.Landscape-ToastNotifier-hidden {
+  transform: translateY(-100%);
+}

@@ -1,0 +1,151 @@
+.Landscape-Table {
+  position: relative;
+}
+
+.Landscape-Table-refresh-button {
+  height: 1em;
+  background-color: rgba(0, 0, 0, 0.8);
+  border-radius: 0.5vmin;
+  color: rgb(240, 240, 240);
+  cursor: pointer;
+  font-size: 150%;
+  line-height: 1em;
+  margin: 1vmin;
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  text-align: center;
+  transition:
+    opacity 0.2s,
+    transform 0.2s
+  ;
+  user-select: none;
+  width: 1em;
+}
+
+.Landscape-Table:hover .Landscape-Table-refresh-button {
+  opacity: 1;
+}
+
+.Landscape-Table-refresh-button:hover {
+  transform: scale(1.125);
+}
+
+.Landscape-Table-refresh-button:active {
+  transform: scale(1.1);
+}
+
+.Landscape-Table-table {
+  background-color: rgba(248, 248, 248, 0.8);
+  border: 0.1em solid rgba(200, 200, 200, 0.5);
+  border-collapse: collapse;
+  border-radius: 0.125vmin;
+  box-sizing: border-box;
+  color: rgb(80, 80, 80);
+  display: table;
+  font-size: 85%;
+  overflow: hidden;
+  width: 100%;
+}
+
+.Landscape-Table-table-body {
+  display: table-row-group;
+}
+
+.Landscape-Table-table-header + .Landscape-Table-table-body {
+  border-top: 0.16em solid rgba(80, 80, 80, 0.2);
+}
+
+.Landscape-Table-table-cell {
+  display: table-cell;
+  padding: 0.2em;
+  vertical-align: top;
+}
+
+.Landscape-Table-table-body .Landscape-Table-table-cell:not(:first-of-type) {
+  border-left: 0.08em solid rgba(80, 80, 80, 0.2);
+}
+.Landscape-Table-table-body .Landscape-Table-table-cell:not(:last-of-type) {
+  border-right: 0.08em solid rgba(80, 80, 80, 0.2);
+}
+
+.Landscape-Table-table-header .Landscape-Table-table-cell {
+  color: rgb(100, 100, 100);
+  font-weight: 600;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.Landscape-Table-table-header .Landscape-Table-table-cell .Landscape-FlyoutPanel-switch {
+  font-weight: normal;
+  margin-left: 0.5em;
+  opacity: 0;
+  text-align: start;
+  transition: opacity 0.2s;
+}
+
+.Landscape-Table-table-header .Landscape-Table-table-cell:hover .Landscape-FlyoutPanel-switch {
+  opacity: 1;
+}
+
+.Landscape-Table-table-header .Landscape-Table-table-cell .Landscape-menu {
+  text-align: start;
+}
+
+.Landscape-Table-table-footer {
+  display: table-footer-group;
+}
+
+.Landscape-Table-table-header {
+  display: table-header-group;
+}
+
+.Landscape-Table-table-row {
+  display: table-row;
+}
+
+.Landscape-Table-table-body .Landscape-Table-table-row {
+  border-bottom: 0.08em dotted rgba(80, 80, 80, 0.2);
+  border-top: 0.08em dotted rgba(80, 80, 80, 0.2);
+  transition: background-image 0.2s;
+}
+
+.Landscape-Table-table-body .Landscape-Table-table-row:first-child {
+  border-top: none;
+}
+
+.Landscape-Table-table-body .Landscape-Table-table-row:last-child {
+  border-bottom: none;
+}
+
+.Landscape-Table-table-body .Landscape-Table-table-row:nth-child(odd) {
+  background-color: rgba(20, 20, 20, 0.05);
+}
+
+.Landscape-Table-table-body .Landscape-Table-table-row:hover {
+  background-image:
+    linear-gradient(
+      rgba(224, 242, 255, 0.42) 20%,
+      rgba(224, 242, 255, 0.4) 40%,
+      rgba(224, 242, 255, 0.4) 60%,
+      rgba(224, 242, 255, 0.42) 80%
+    ),
+    linear-gradient(
+      135deg,
+      rgba(0, 240, 0, 0.01) 20%,
+      rgba(0, 220, 0, 0.02),
+      rgba(0, 240, 0, 0.01) 80%
+    ),
+    linear-gradient(
+      45deg,
+      rgba(0, 0, 240, 0.01) 20%,
+      rgba(0, 0, 220, 0.02),
+      rgba(0, 0, 240, 0.01) 80%
+    )
+  ;
+}
+
+.Landscape-Table-table-header .Landscape-Table-table-row {
+  background-color: rgba(20, 20, 20, 0.1);
+}

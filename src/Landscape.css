@@ -1,0 +1,578 @@
+/*
+        …[  [ … [    [[∞]]    ] … ]  ]…
+      Landscape – Default Interface Theme
+    – designed by Nate Gehringer ◦ © 2017 –
+  <https://backwater.systems> <ngehringer@gmail.com>
+        …[  [ … [    [[∞]]    ] … ]  ]…
+*/
+
+
+/* .Landscape */
+
+.Landscape {
+  background-color: white;
+  color: rgb(200, 200, 200);
+  font-family: 'Optima', sans-serif;
+  margin: 0;
+}
+
+
+/* <a> | .link */
+
+.Landscape a,
+.Landscape-link {
+  color: rgb(180, 180, 180);
+  cursor: pointer;
+  display: inline-block;
+  text-decoration: underline;
+  transition:
+    color 0.2s,
+    transform 0.2s
+  ;
+}
+
+.Landscape a:hover,
+.Landscape-link:hover {
+  color: rgb(120, 180, 220);
+  text-decoration: underline;
+  transform: scale(1.025);
+}
+
+.Landscape a:active,
+.Landscape-link:active {
+  color: rgb(120, 180, 250);
+  text-decoration: none;
+  transform: scale(1.0125);
+}
+
+
+/* .box */
+
+.Landscape-box {
+  border-radius: 0.125vmin;
+  box-shadow: 0.2vmin 0.2vmin 0.15vmin rgba(50, 50, 50, 0.35);
+  padding: 0.5em;
+}
+
+
+/* <button> */
+
+.Landscape button {
+  background-color: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: 0.125vmin;
+  box-shadow: none;
+  color: rgb(140, 140, 140);
+  cursor: pointer;
+  font-size: 80%;
+  margin: 0.4em;
+  outline: none;
+  padding: 0.25em 0.4em;
+  text-shadow: 0.04em 0.04em rgba(255, 255, 255, 0.5);
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    transform 0.2s
+  ;
+}
+
+.Landscape button:hover {
+  background-color: rgba(250, 250, 250, 0.95);
+  transform: scale(1.125);
+}
+
+.Landscape button:active {
+  background-color: rgba(240, 240, 240, 0.975);
+  color: rgb(120, 120, 120);
+  transform: scale(1.1);
+}
+
+.Landscape button.Landscape-accent {
+  background-color: rgba(224, 242, 255, 0.9);
+  color: rgb(120, 180, 220);
+}
+
+.Landscape button.Landscape-accent:hover {
+  background-color: rgba(224, 242, 255, 0.95);
+}
+
+.Landscape button.Landscape-accent:active {
+  background-color: rgba(220, 236, 248, 0.95);
+  color: rgb(140, 210, 255);
+}
+
+
+/* .canvas */
+
+.Landscape-canvas {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  justify-content: center;
+  overflow: hidden;
+}
+
+
+/* .centered-text */
+
+.Landscape-centered-text {
+  text-align: center;
+}
+
+
+/* .flex-column */
+
+.Landscape-flex-column {
+  flex: 1 1;
+  padding: 0 0.5vw;
+}
+
+.Landscape-flex-column:first-of-type {
+  padding-left: 0;
+}
+
+.Landscape-flex-column:last-of-type {
+  padding-right: 0;
+}
+
+.Landscape-flex-column.Landscape-flex-column-compact {
+  flex: 0 1;
+}
+
+.Landscape-flex-column-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.Landscape-flex-column-container .Landscape-flex-column-container-centered-cross-axis {
+  align-items: center;
+}
+
+.Landscape-flex-column-container.Landscape-flex-column-dividers > .Landscape-flex-column + .Landscape-flex-column {
+  border-left: 0.1em solid rgba(80, 80, 80, 0.5);
+}
+
+
+/* .flex-row */
+
+.Landscape-flex-row {
+  flex: 1 1;
+  padding: 0.5vh 0;
+}
+
+.Landscape-flex-row:first-of-type {
+  padding-top: 0;
+}
+
+.Landscape-flex-row:last-of-type {
+  padding-bottom: 0;
+}
+
+.Landscape-flex-row.Landscape-flex-row-compact {
+  flex: 0 1;
+}
+
+.Landscape-flex-row-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: center;
+}
+
+
+/* <h1> | <h2> | <h3> | <h4> | <h5> | <h6> */
+
+.Landscape h1,
+.Landscape h2,
+.Landscape h3,
+.Landscape h4,
+.Landscape h5,
+.Landscape h6 {
+  color: rgba(150, 150, 150, 0.8);
+  margin: 0 0 0.4em;
+}
+
+.Landscape h1,
+.Landscape h2,
+.Landscape h3 {
+  border-bottom: 0.1em solid rgba(80, 80, 80, 0.1);
+}
+
+.Landscape h4,
+.Landscape h5,
+.Landscape h6 {
+  text-decoration: underline solid rgba(80, 80, 80, 0.1) 10%;
+}
+
+
+/* .indicator */
+
+.Landscape-indicator {
+  background-color: transparent;
+  border-radius: 50%;
+  display: inline-block;
+  height: 0.2em;
+  padding: 0.2em;
+  transition: background-color 0.2s;
+  width: 0.2em;
+}
+
+.Landscape-indicator.Landscape-indicator-blue {
+  background-color: rgb(80, 180, 250);
+}
+
+.Landscape-indicator.Landscape-indicator-green {
+  background-color: rgb(20, 220, 80);
+}
+
+.Landscape-indicator.Landscape-indicator-grey {
+  background-color: rgb(80, 80, 80);
+}
+
+.Landscape-indicator.Landscape-indicator-orange {
+  background-color: rgb(240, 180, 20);
+}
+
+.Landscape-indicator.Landscape-indicator-red {
+  background-color: rgb(220, 20, 20);
+}
+
+.Landscape-indicator.Landscape-indicator-yellow {
+  background-color: rgb(255, 255, 20);
+}
+
+
+/* <input> */
+
+.Landscape input {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* <input> | <select> */
+
+.Landscape input,
+.Landscape select {
+  padding: 0.25em 0.5em;
+  transition: transform 0.2s;
+}
+
+.Landscape input[type="checkbox"],
+.Landscape input[type="radio"],
+.Landscape select {
+  cursor: pointer;
+}
+
+.Landscape input:hover,
+.Landscape select:hover {
+  transform: scale(1.125);
+}
+
+.Landscape input:active,
+.Landscape input:focus,
+.Landscape select:active,
+.Landscape select:focus {
+  transform: scale(1.1);
+}
+
+
+/* .interactive */
+
+.Landscape-interactive {
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.Landscape-interactive:hover {
+  transform: scale(1.125);
+}
+
+.Landscape-interactive:active,
+.Landscape-interactive.Landscape-active {
+  transform: scale(1.1);
+}
+
+
+/* <label> */
+
+.Landscape label {
+  cursor: pointer;
+}
+
+
+/* .loading-message */
+
+.Landscape-loading-message::before {
+  color: rgba(220, 220, 220);
+  content: 'Loading…';
+  font-style: italic;
+  font-size: 90%;
+}
+
+
+/* .menu */
+
+ul.Landscape-menu {
+  list-style-type: none;
+  letter-spacing: 0.08em;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+  /* TODO: Remove vendor prefixes */
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+ul.Landscape-menu li {
+  background-color: rgba(150, 150, 150, 0.2);
+  color: rgb(80, 80, 80);
+  padding: 1.5em;
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    transform 0.2s
+  ;
+}
+
+ul.Landscape-menu.Landscape-compact li {
+  padding: 0.5em 1em;
+}
+
+ul.Landscape-menu > li {
+  font-variant: small-caps;
+}
+
+ul.Landscape-menu:hover li {
+  background-color: rgba(120, 120, 120, 0.2);
+  color: rgb(100, 100, 100);
+}
+
+ul.Landscape-menu li label {
+  display: block;
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    transform 0.2s
+  ;
+}
+
+ul.Landscape-menu li:not(.Landscape-inactive):hover {
+  background-color: rgba(180, 180, 180, 0.2);
+  transform: scale(1.125);
+}
+
+ul.Landscape-menu li:not(.Landscape-inactive):active {
+  background-color: rgba(220, 220, 220, 0.4);
+  color: rgb(120, 120, 120);
+  transform: scale(1.1);
+}
+
+ul.Landscape-menu .Landscape-menu-heading {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 0.125vmin;
+  color: rgb(80, 80, 80);
+  font-size: 80%;
+  margin-bottom: 0.5em;
+  margin-top: 0.5em;
+  padding: 0.2em 1em;
+  text-align: center;
+  text-shadow: 0.1em 0.1em rgba(180, 180, 180, 0.8);
+}
+
+
+/* .modal-overlay */
+
+.Landscape-modal-overlay {
+  background-color: rgba(255, 255, 255, 0.5);
+  height: 100vh;
+  left: 0;
+  opacity: 1;
+  position: fixed;
+  top: 0;
+  transition: opacity 0.1s;
+  width: 100vw;
+}
+
+.Landscape-modal-overlay.Landscape-inactive {
+  opacity: 0;
+}
+
+
+/* <p> */
+
+.Landscape p {
+  margin: 0;
+}
+
+.Landscape p + p {
+  margin-top: 0.5em;
+}
+
+
+/* .panel */
+
+.Landscape-panel {
+  background-color: rgba(140, 140, 140, 0.1);
+  border-radius: 0.2vmin;
+  padding: 1em;
+}
+
+.Landscape-panel + .Landscape-panel {
+  margin-top: 1.5em;
+}
+
+/* .section-heading */
+
+.Landscape-section-heading {
+  border-bottom: 0.08em solid rgba(80, 80, 80, 0.2);
+  color: rgb(150, 150, 150);
+  font-size: 115%;
+  font-weight: 400;
+  margin-bottom: 0.2em;
+  padding-bottom: 0.1em;
+  text-shadow: 0.02em 0.02em rgba(220, 220, 220, 0.8);
+}
+
+
+/* .surface */
+
+.Landscape-surface {
+  background-color: rgba(255, 255, 255, 0.5);
+  background-image:
+    linear-gradient(
+      rgba(0, 0, 0, 0.05) 20%,
+      rgba(20, 20, 20, 0.05) 40%,
+      rgba(20, 20, 20, 0.05) 60%,
+      rgba(0, 0, 0, 0.05) 80%
+    ),
+    linear-gradient(
+      150deg,
+      rgba(0, 240, 0, 0.02) 20%,
+      rgba(0, 220, 0, 0.04),
+      rgba(0, 240, 0, 0.02) 80%
+    ),
+    linear-gradient(
+      30deg,
+      rgba(0, 0, 240, 0.02) 20%,
+      rgba(0, 0, 220, 0.04),
+      rgba(0, 0, 240, 0.02) 80%
+    )
+  ;
+}
+
+
+/* <table> */
+
+.Landscape table {
+  background-color: rgba(248, 248, 248, 0.8);
+  border: 0.1em solid rgba(200, 200, 200, 0.5);
+  border-collapse: collapse;
+  border-radius: 0.125vmin;
+  box-sizing: border-box;
+  color: rgb(80, 80, 80);
+  font-size: 90%;
+  overflow: hidden;
+  width: 100%;
+}
+
+.Landscape table td {
+  vertical-align: top;
+}
+
+.Landscape table th {
+  background-color: rgba(20, 20, 20, 0.05);
+  color: rgb(100, 100, 100);
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.Landscape table td,
+.Landscape table th {
+  padding: 0.2em;
+}
+
+.Landscape table tbody tr {
+  border-top: 0.08em dotted rgba(80, 80, 80, 0.2);
+  border-bottom: 0.08em dotted rgba(80, 80, 80, 0.2);
+  transition: background-image 0.2s;
+}
+
+.Landscape table tbody tr:first-child {
+  border-top: none;
+}
+
+.Landscape table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.Landscape table tbody tr:nth-child(odd) {
+  background-color: rgba(20, 20, 20, 0.05);
+}
+
+.Landscape table tbody tr:hover {
+  background-image:
+    linear-gradient(
+      rgba(224, 242, 255, 0.42) 20%,
+      rgba(224, 242, 255, 0.4) 40%,
+      rgba(224, 242, 255, 0.4) 60%,
+      rgba(224, 242, 255, 0.42) 80%
+    ),
+    linear-gradient(
+      135deg,
+      rgba(0, 240, 0, 0.01) 20%,
+      rgba(0, 220, 0, 0.02),
+      rgba(0, 240, 0, 0.01) 80%
+    ),
+    linear-gradient(
+      45deg,
+      rgba(0, 0, 240, 0.01) 20%,
+      rgba(0, 0, 220, 0.02),
+      rgba(0, 0, 240, 0.01) 80%
+    )
+  ;
+}
+
+.Landscape table tbody td:not(:first-of-type) {
+  border-left: 0.08em solid rgba(80, 80, 80, 0.2);
+}
+.Landscape table tbody td:not(:last-of-type) {
+  border-right: 0.08em solid rgba(80, 80, 80, 0.2);
+}
+
+.Landscape table thead tr {
+  background-color: rgba(20, 20, 20, 0.05);
+}
+
+
+/* .text-color */
+
+.Landscape-text-color-light-grey {
+  color: rgb(200, 200, 200);
+}
+
+.Landscape-text-color-medium-grey {
+  color: rgb(150, 150, 150);
+}
+
+
+/* .text-style */
+
+.Landscape-text-style-monospace {
+  font-family: monospace;
+}
+
+
+/* .top-margin */
+
+.Landscape-top-margin {
+  margin-top: 1em;
+}
+
+.Landscape-top-margin-compact {
+  margin-top: 0.35em;
+}

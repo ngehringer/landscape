@@ -1,0 +1,77 @@
+.Landscape-TabGroup {
+  margin: 0.4em;
+}
+
+.Landscape-TabGroup-tab {
+  display: inline-block;
+  padding: 0.4em 0.6em;
+  background-color: transparent;
+  border-width: 0 0 0.2em 0;
+  border-style: solid;
+  border-color: transparent;
+  border-radius: 0.125vmin;
+  letter-spacing: 0.08em;
+  color: rgb(100, 100, 100);
+  cursor: pointer;
+  /* TODO: Remove vendor prefixes */
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-user-select: none;
+  user-select: none;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s,
+    color 0.2s,
+    text-shadow 0.2s,
+    transform 0.2s
+  ;
+}
+
+.Landscape-TabGroup:hover .Landscape-TabGroup-tab {
+  border-color: rgba(200, 200, 200, 0.5);
+}
+
+.Landscape-TabGroup .Landscape-TabGroup-tab:hover {
+  transform: scale(1.125);
+  border-color: rgba(200, 200, 200, 0.5);
+}
+
+.Landscape-TabGroup .Landscape-TabGroup-tab:active,
+.Landscape-TabGroup .Landscape-TabGroup-tab.Landscape-TabGroup-active {
+  transform: scale(1.1);
+  border-color: rgb(120, 180, 220, 0.5);
+  color: rgb(120, 180, 220);
+  text-shadow: -0.05em 0.025em 0.025em rgba(255, 255, 255, 0.5);
+}
+
+.Landscape-TabGroup-tab-contents:not(.Landscape-visible) {
+  display: none;
+}
+
+
+/* vertical */
+
+.Landscape-TabGroup.Landscape-TabGroup-style-vertical .Landscape-TabGroup {
+  margin: 0.8em;
+}
+
+.Landscape-TabGroup.Landscape-TabGroup-style-vertical .Landscape-TabGroup-tab {
+  display: block;
+  border-width: 0 0.8em 0 0;
+}
+
+.Landscape-TabGroup.Landscape-TabGroup-style-vertical:hover .Landscape-TabGroup-tab {
+  background-color: rgba(228, 228, 228, 0.1);
+}
+
+.Landscape-TabGroup.Landscape-TabGroup-style-vertical .Landscape-TabGroup-tab:hover {
+  background-color: rgba(220, 220, 220, 0.2);
+  box-shadow: 0 0.2em 0.2em rgba(40, 40, 40, 0.05);
+}
+
+.Landscape-TabGroup.Landscape-TabGroup-style-vertical .Landscape-TabGroup-tab:active,
+.Landscape-TabGroup.Landscape-TabGroup-style-vertical .Landscape-TabGroup-tab.Landscape-TabGroup-active {
+  background-color: rgba(180, 180, 180, 0.2);
+  box-shadow: 0 0.2em 0.2em rgba(40, 40, 40, 0.1);
+}

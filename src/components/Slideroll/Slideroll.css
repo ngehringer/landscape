@@ -1,0 +1,100 @@
+.Slideroll {
+  position: relative;
+  height: 100%;
+  width: 100%;
+}
+
+.Landscape-Slideroll-slide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  overflow: hidden;
+  height: 100%;
+  width: 100%;
+  transition:
+    filter 800ms ease,
+    opacity 800ms,
+    transform 800ms
+  ;
+}
+
+.Landscape-Slideroll-slide:not(.Landscape-visible) {
+  display: none;
+}
+
+.Landscape-Slideroll-slide.Landscape-Slideroll-animate {
+  overflow-y: hidden; /* remove the vertical scrollbar when animating between slides */
+  opacity: 0;
+  pointer-events: none; /* deactivate mouse events when animating between slides */
+  filter: blur(100px);
+}
+
+.Landscape-Slideroll-slide.Landscape-Slideroll-animate.fadeIn {
+  /* this space intentionally left blank */
+}
+
+.Landscape-Slideroll-slide.Landscape-Slideroll-animate.left {
+  transform: translateX(-100%);
+}
+
+.Landscape-Slideroll-slide.Landscape-Slideroll-animate.right {
+  transform: translateX(100%);
+}
+
+.Landscape-Slideroll-slide.Landscape-Slideroll-animate.down {
+  transform: translateY(100%);
+}
+
+.Landscape-Slideroll-slide.Landscape-Slideroll-animate.up {
+  transform: translateY(-100%);
+}
+
+.Landscape-Slideroll-slide-contents {
+  overflow: auto;
+  height: 100%;
+  width: 100%;
+}
+
+.Landscape-Slideroll-slide-contents-container {
+  height: 100%;
+  width: 100%;
+}
+
+
+/* image slide */
+
+.Landscape-Slideroll-slide.Landscape-Slideroll-image-slide img {
+  max-height: 100%;
+  max-width: 100%;
+}
+
+.Landscape-Slideroll-slide.Landscape-Slideroll-image-slide .Landscape-Slideroll-slide-contents-container {
+  overflow: hidden;
+}
+
+
+/* THEME: translucent */
+
+.translucent .Landscape-Slideroll-slide-contents {
+  box-sizing: border-box;
+  padding: /*2vh*/ 0 4vw;
+}
+
+/* HACK: (Gecko/Trident) Add top and bottom padding to elements that overflow their container (CSS padding proper is clipped on overflow) */
+.translucent .Landscape-Slideroll-slide-contents::after,
+.translucent .Landscape-Slideroll-slide-contents::before {
+  content: '';
+  display: block;
+  height: 2vh;
+}
+
+.translucent .Landscape-Slideroll-slide-contents-container {
+  background-color: rgba(255, 255, 255, 0.2775);
+  height: auto;
+  width: auto;
+  max-width: 80%;
+  border-radius: 2vw;
+  color: rgba(0, 0, 0, 0.6);
+}
