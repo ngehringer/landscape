@@ -1,7 +1,13 @@
 import * as core from '@backwater-systems/core';
+
 import LandscapeComponent from './LandscapeComponent.js';
 
 
+/**
+ * The `ModalLandscapeComponent` abstract base class.
+ * @abstract
+ * @extends LandscapeComponent
+ */
 class ModalLandscapeComponent extends LandscapeComponent {
   static get DEFAULTS() {
     return Object.freeze({
@@ -19,21 +25,24 @@ class ModalLandscapeComponent extends LandscapeComponent {
     targetHTMLID
   }) {
     super({
-      'createTarget': createTarget,
-      'debug': debug,
-      'targetElement': targetElement,
-      'targetHTMLID': targetHTMLID
+      createTarget: createTarget,
+      debug: debug,
+      targetElement: targetElement,
+      targetHTMLID: targetHTMLID
     });
 
     try {
-      this.closeOnModalOverlayClick = core.utilities.validateType(closeOnModalOverlayClick, Boolean)
+      /**
+       * Whether the component should close when the modal overlay is clicked
+       */
+      this.closeOnModalOverlayClick = (typeof closeOnModalOverlayClick === 'boolean')
         ? closeOnModalOverlayClick
         : ModalLandscapeComponent.DEFAULTS.CLOSE_ON_MODAL_OVERLAY_CLICK
       ;
 
       // allow the component to intercept keystrokes (and thus, gain :focus)
       this.element.tabIndex = 0;
-      // handle the component’s “keyup” event
+      // handle the component’s `keyup` event
       this.element.addEventListener(
         'keyup',
         this._eventKeyup.bind(this)
@@ -48,7 +57,9 @@ class ModalLandscapeComponent extends LandscapeComponent {
 
   async _eventKeyup(event) {
     try {
-      this.logDebug(`${ModalLandscapeComponent.prototype._eventKeyup.name}`);
+      this.logDebug({
+        _functionName: ModalLandscapeComponent.prototype._eventKeyup.name
+      });
 
       // Escape: close the component
       if (event.key === 'Escape') {
@@ -56,8 +67,8 @@ class ModalLandscapeComponent extends LandscapeComponent {
       }
       // Enter: …
       else if (event.key === 'Enter') {
-        // … if the component can be submitted (e.g., is a dialog), invoke the submit function
-        if ( core.utilities.validateType(this.submit, Function) ) {
+        // … if the component can be submitted (e.g., is a dialog), invoke the `submit` function
+        if (typeof this.submit === 'function') {
           await this.submit();
         }
       }
@@ -67,9 +78,12 @@ class ModalLandscapeComponent extends LandscapeComponent {
     }
   }
 
-  async _eventModalOverlayClick() {
+  async _eventModalOverlayClick(event) {
     try {
-      this.logDebug(`${ModalLandscapeComponent.prototype._eventModalOverlayClick.name}`);
+      this.logDebug({
+        _functionName: ModalLandscapeComponent.prototype._eventModalOverlayClick.name,
+        event: event
+      });
 
       // close the component
       await this.close();
@@ -83,20 +97,24 @@ class ModalLandscapeComponent extends LandscapeComponent {
   }
 
   _renderModalOverlay() {
-    this.logDebug(`${ModalLandscapeComponent.prototype._renderModalOverlay.name}`);
+    this.logDebug({
+      _functionName: ModalLandscapeComponent.prototype._renderModalOverlay.name
+    });
 
-    // create the modal overlay element
+    /**
+     * The modal overlay `Element`
+     */
     this._modalOverlayElement = document.createElement('div');
     this._modalOverlayElement.classList.add(
       this.constructor.REFERENCE.HTML_CLASS_NAME.MODAL_OVERLAY,
       this.constructor.REFERENCE.HTML_CLASS_NAME.INACTIVE
     );
 
-    // add the overlay to the DOM (immediately before the element)
+    // add the overlay to the document (immediately before the element)
     this.element.parentNode.insertBefore(this._modalOverlayElement, this.element);
 
-    // HACK: allow all CSS transitions to fire correctly by calling JSON.stringify() on the element’s style
-    // TODO: Decrease heft
+    // compute the overlay element’s style – this materializes values at a baseline value, allowing CSS transitions to fire correctly
+    // TODO: Analyze performance hit / potential optimizations
     JSON.stringify( getComputedStyle(this._modalOverlayElement) );
 
     // remove the overlay’s “inactive” state
@@ -112,14 +130,16 @@ class ModalLandscapeComponent extends LandscapeComponent {
   }
 
   async _unrenderModalOverlay() {
-    this.logDebug(`${ModalLandscapeComponent.prototype._unrenderModalOverlay.name}`);
+    this.logDebug({
+      _functionName: ModalLandscapeComponent.prototype._unrenderModalOverlay.name
+    });
 
     // add the overlay’s “inactive” state
     this._modalOverlayElement.classList.add(this.constructor.REFERENCE.HTML_CLASS_NAME.INACTIVE);
 
     // after the “inactive” transition …
-    await this._delay(this.constructor.REFERENCE.CSS_TRANSITION_DURATION.MODAL_OVERLAY);
-    // … remove the overlay element from the DOM
+    await core.utilities.delay(this.constructor.REFERENCE.CSS_TRANSITION_DURATION.MODAL_OVERLAY);
+    // … remove the overlay element from the document
     if (this._modalOverlayElement.parentNode !== null) {
       this._modalOverlayElement.parentNode.removeChild(this._modalOverlayElement);
     }

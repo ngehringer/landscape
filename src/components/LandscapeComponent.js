@@ -1,38 +1,75 @@
 import * as core from '@backwater-systems/core';
 
 
+/**
+ * The `LandscapeComponent` abstract base class.
+ * @abstract
+ */
 class LandscapeComponent {
   static get DEFAULTS() {
     return Object.freeze({
       CREATE_TARGET: false,
-      DEBUG: false
+      DEBUG: false,
+      LOGGER: core.logging.ConsoleLogger
     });
   }
 
   constructor({
     createTarget = LandscapeComponent.DEFAULTS.CREATE_TARGET,
     debug = LandscapeComponent.DEFAULTS.DEBUG,
+    logger = LandscapeComponent.DEFAULTS.LOGGER,
     targetElement,
     targetHTMLID
   }) {
     try {
-      this.debug = core.utilities.validateType(debug, Boolean)
+      /**
+       * The logger for the component instance
+       */
+      this.logger = (
+        (typeof logger === 'object')
+        && (logger instanceof core.logging.BaseLogger)
+      )
+        ? logger
+        : LandscapeComponent.DEFAULTS.LOGGER
+      ;
+
+      /**
+       * Whether debug mode is enabled
+       * @default false
+       */
+      this.debug = (typeof debug === 'boolean')
         ? debug
         : LandscapeComponent.DEFAULTS.DEBUG
       ;
 
-      this.createTarget = core.utilities.validateType(createTarget, Boolean)
+      /**
+       * Whether the component’s `Element` should be created
+       * @default false
+       */
+      this.createTarget = (typeof createTarget === 'boolean')
         ? createTarget
         : LandscapeComponent.DEFAULTS.CREATE_TARGET
       ;
 
-      this.htmlID = core.utilities.isNonEmptyString(targetHTMLID)
+      /**
+       * The HTML ID of the component
+       */
+      this.htmlID = (
+        (typeof targetHTMLID === 'string')
+        && core.utilities.validation.isNonEmptyString(targetHTMLID)
+      )
         ? targetHTMLID
         : null
       ;
 
       if (this.createTarget) {
+        /**
+         * The component `Element`
+         *
+         * It contains all of the children nodes of the component.
+         */
         this.element = document.createElement('div');
+
         // set the element’s HTML ID, if specified
         if (this.htmlID !== null) {
           this.element.id = this.htmlID;
@@ -41,17 +78,20 @@ class LandscapeComponent {
         this.element.classList.add(this.constructor.REFERENCE.HTML_CLASS_NAME._);
       }
       else {
-        this.element = core.utilities.validateType(targetElement, Element)
-          ? targetElement
-          // if an element is not specified, …
-          : (this.htmlID === null)
-            ? null
-            // … but an html ID is, attempt to retrieve the element from the DOM
-            : document.querySelector(`#${this.htmlID}`)
+        this.element = (
+          (typeof targetElement === 'object')
+          && (targetElement instanceof Element)
+        )
+            ? targetElement
+            // if an element is not specified, …
+            : (this.htmlID === null)
+              ? null
+              // … but an html ID is, attempt to retrieve the element from the document
+              : document.querySelector(`#${this.htmlID}`)
         ;
       }
 
-      // ensure the component’s element exists
+      // abort if the component’s element does not exist
       if (this.element === null) throw new Error(`The component’s specified element is invalid${(this.htmlID === null) ? '' : ` (#${this.htmlID})`}.`);
 
       if (
@@ -59,7 +99,10 @@ class LandscapeComponent {
         (this.htmlID !== null)
         // … ensure it matches the element’s HTML ID values
         && (this.htmlID !== this.element.id)
-      ) throw new Error(`The specified HTML ID (“${this.htmlID}”) and the specified element’s HTML ID (“${this.element.id}”) do not match.`);
+      ) throw new core.errors.InvalidParameterValueError({
+        parameterName: 'htmlID',
+        reason: `The specified HTML ID (“${this.htmlID}”) and the specified element’s HTML ID (“${this.element.id}”) do not match.`
+      });
     }
     catch (error) {
       this.logError(error);
@@ -68,53 +111,30 @@ class LandscapeComponent {
     }
   }
 
-  get _loggingProcessID() {
-    const identifierList = [];
-    if ( core.utilities.validateType(this.constructor.CLASS_NAME, String) ) {
-      identifierList.push(this.constructor.CLASS_NAME);
-    }
-    if ( core.utilities.validateType(this.htmlID, String) ) {
-      identifierList.push(`#${this.htmlID}`);
-    }
-
-    return (identifierList.length === 0)
-      ? null
-      : identifierList.join('|')
-    ;
-  }
-
-  async _delay(delayMilliseconds) {
-    if (
-      !core.utilities.isNumber(delayMilliseconds)
-      || (delayMilliseconds <= 0)
-    ) throw new core.errors.TypeValidationError('delayMilliseconds', Number);
-
-    this.logDebug(`${LandscapeComponent.prototype._delay.name} → delayMilliseconds: ${core.utilities.formatNumber(delayMilliseconds)}`);
-
-    await new Promise(
-      (resolve, _reject) => {
-        setTimeout(
-          () => {
-            resolve();
-          },
-          delayMilliseconds
-        );
-      }
-    );
-  }
-
   _getCenteredCoordinates() {
     // default: the origin (0, 0)
+
+    /**
+     * The centered “x” coordinate
+     */
     let x = 0;
+
+    /**
+     * The centered “y” coordinate
+     */
     let y = 0;
 
-    // get the element’s dimensions
+    /**
+     * The component element’s dimensions
+     */
     const {
       height: elementHeight,
       width: elementWidth
     } = this.element.getBoundingClientRect();
 
-    // get the viewport’s dimensions
+    /**
+     * The viewport’s dimensions
+     */
     const {
       innerHeight: viewportHeight,
       innerWidth: viewportWidth
@@ -131,19 +151,51 @@ class LandscapeComponent {
     }
 
     return {
-      'x': x,
-      'y': y
+      x: x,
+      y: y
     };
   }
 
+  _getLoggingSourceID({
+    functionName = null
+  }) {
+    /**
+     * A list of identifiers to include in the logging source ID
+     */
+    const identifierList = [];
+
+    if (typeof this.constructor.CLASS_NAME === 'string') {
+      identifierList.push(this.constructor.CLASS_NAME);
+    }
+    if (typeof this.htmlID === 'string') {
+      identifierList.push(`#${this.htmlID}`);
+    }
+    if (typeof functionName === 'string') {
+      identifierList.push(functionName);
+    }
+
+    return (identifierList.length === 0)
+      ? null
+      : identifierList.join('::')
+    ;
+  }
+
+  /**
+   * Removes the component from the document.
+   */
   destroy() {
     try {
-      this.logDebug(`${LandscapeComponent.prototype.destroy.name}`);
+      this.logDebug({
+        _functionName: LandscapeComponent.prototype.destroy.name
+      });
 
-      if ( !core.utilities.validateType(this.element, Element) ) throw new core.errors.TypeValidationError('element', Element);
-      if ( !core.utilities.validateType(this.element.parentNode, Element) ) throw new core.errors.TypeValidationError('element.parentNode', Element);
+      if (
+        (typeof this.element !== 'object')
+        || !(this.element instanceof Element)
+      ) throw new core.errors.TypeValidationError('element', Element);
+      if (this.element.parentNode === null) throw new core.errors.TypeValidationError('element.parentNode', Element);
 
-      // remove the component from the DOM
+      // remove the component from the document
       this.element.parentNode.removeChild(this.element);
     }
     catch (error) {
@@ -151,63 +203,170 @@ class LandscapeComponent {
     }
   }
 
-  logCriticalError(logItem) {
+  logCriticalError(data) {
     try {
-      core.logging.Logger.logCriticalError(logItem, this._loggingProcessID, this.debug);
+      let
+        _data,
+        functionName
+      ;
+      // extract the “_functionName” property from the logged data
+      if (typeof data === 'object') {
+        ({
+          _functionName: functionName,
+          ..._data
+        } = { ...data });
+      }
+      else {
+        _data = data;
+        functionName = null;
+      }
+
+      this.logger.logCriticalError({
+        data: _data,
+        sourceID: this._getLoggingSourceID({ functionName: functionName }),
+        verbose: this.debug
+      });
     }
     catch (error) {
       this.logError(error);
     }
   }
 
-  logDebug(logItem) {
+  logDebug(data) {
     try {
-      // only log debug messages if the component was initialized in debug mode
+      // abort if the component was not initialized with debug mode enabled
       if (!this.debug) return;
 
-      core.logging.Logger.logDebug(logItem, this._loggingProcessID, this.debug);
+      let
+        _data,
+        functionName
+      ;
+      // extract the “_functionName” property from the logged data
+      if (typeof data === 'object') {
+        ({
+          _functionName: functionName,
+          ..._data
+        } = { ...data });
+      }
+      else {
+        _data = data;
+        functionName = null;
+      }
+
+      this.logger.logDebug({
+        data: _data,
+        sourceID: this._getLoggingSourceID({ functionName: functionName }),
+        verbose: this.debug
+      });
     }
     catch (error) {
       this.logError(error);
     }
   }
 
-  logError(logItem) {
+  logError(data) {
     try {
-      core.logging.Logger.logError(logItem, this._loggingProcessID, this.debug);
+      let
+        _data,
+        functionName
+      ;
+      // extract the “_functionName” property from the logged data
+      if (typeof data === 'object') {
+        ({
+          _functionName: functionName,
+          ..._data
+        } = { ...data });
+      }
+      else {
+        _data = data;
+        functionName = null;
+      }
+
+      this.logger.logError({
+        data: _data,
+        sourceID: this._getLoggingSourceID({ functionName: functionName }),
+        verbose: this.debug
+      });
     }
     catch (error) {
-      // output logging errors to the console
+      // write a message describing the logging error to the console
       console.log(`[${new Date().toISOString()}] {CRITICAL ERROR|${LandscapeComponent.name}.logError} ${error.message}${this.debug ? `\n${error.stack}` : ''}`);
     }
   }
 
-  logInfo(logItem) {
+  logInfo(data) {
     try {
-      core.logging.Logger.logInfo(logItem, this._loggingProcessID, this.debug);
+      let
+        _data,
+        functionName
+      ;
+      // extract the “_functionName” property from the logged data
+      if (typeof data === 'object') {
+        ({
+          _functionName: functionName,
+          ..._data
+        } = { ...data });
+      }
+      else {
+        _data = data;
+        functionName = null;
+      }
+
+      this.logger.logInfo({
+        data: _data,
+        sourceID: this._getLoggingSourceID({ functionName: functionName }),
+        verbose: this.debug
+      });
     }
     catch (error) {
       this.logError(error);
     }
   }
 
-  logWarning(logItem) {
+  logWarning(data) {
     try {
-      core.logging.Logger.logWarning(logItem, this._loggingProcessID, this.debug);
+      let
+        _data,
+        functionName
+      ;
+      // extract the “_functionName” property from the logged data
+      if (typeof data === 'object') {
+        ({
+          _functionName: functionName,
+          ..._data
+        } = { ...data });
+      }
+      else {
+        _data = data;
+        functionName = null;
+      }
+
+      this.logger.logWarning({
+        data: _data,
+        sourceID: this._getLoggingSourceID({ functionName: functionName }),
+        verbose: this.debug
+      });
     }
     catch (error) {
       this.logError(error);
     }
   }
 
+  /**
+   * Sets the position of the component relative to its parent node, using the specified coordinates.
+   */
   setPosition({
     x,
     y
   }) {
-    if ( !core.utilities.isNumber(x) ) throw new core.errors.TypeValidationError('x', Number);
-    if ( !core.utilities.isNumber(y) ) throw new core.errors.TypeValidationError('y', Number);
+    if (typeof x !== 'number') throw new core.errors.TypeValidationError('x', Number);
+    if (typeof y !== 'number') throw new core.errors.TypeValidationError('y', Number);
 
-    this.logDebug(`${LandscapeComponent.prototype.setPosition.name} → { x: ${x}, y: ${y} }`);
+    this.logDebug({
+      _functionName: LandscapeComponent.prototype.setPosition.name,
+      x: x,
+      y: y
+    });
 
     this.element.style.left = `${x}px`;
     this.element.style.top = `${y}px`;

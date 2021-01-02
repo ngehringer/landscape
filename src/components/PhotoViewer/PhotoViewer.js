@@ -1,46 +1,64 @@
 import * as core from '@backwater-systems/core';
-import LandscapeComponent from '../LandscapeComponent.js';
+
+import ModalLandscapeComponent from '../ModalLandscapeComponent.js';
 
 
-class PhotoViewer extends LandscapeComponent {
+/**
+ * A modal photo viewer.
+ * @extends ModalLandscapeComponent
+ */
+class PhotoViewer extends ModalLandscapeComponent {
   static get CLASS_NAME() { return `@backwater-systems/landscape.components.${PhotoViewer.name}`; }
 
   static get DEFAULTS() {
     return Object.freeze({
-      DEBUG: LandscapeComponent.DEFAULTS.DEBUG
+      DEBUG: ModalLandscapeComponent.DEFAULTS.DEBUG
     });
   }
 
   static get REFERENCE() {
+    /** The HTML class name of the component */
+    const HTML_CLASS_NAME = `Landscape-${PhotoViewer.name}`;
+
     return Object.freeze({
       CSS_TRANSITION_DURATION: Object.freeze({
-        INITIAL: 100
+        INITIAL: 100,
+        MODAL_OVERLAY: 700
       }),
       HTML_CLASS_NAME: Object.freeze({
-        _: 'Landscape-PhotoViewer',
-        INITIAL: 'Landscape-PhotoViewer-initial'
+        _: HTML_CLASS_NAME,
+        INACTIVE: 'Landscape-inactive',
+        INITIAL: `${HTML_CLASS_NAME}-initial`
       })
     });
   }
 
   constructor({
     debug = PhotoViewer.DEFAULTS.DEBUG,
-    targetElement,
-    targetHTMLID,
     url
   }) {
     super({
-      'debug': debug,
-      'targetElement': targetElement,
-      'targetHTMLID': targetHTMLID
+      closeOnModalOverlayClick: true,
+      createTarget: true,
+      debug: debug
     });
 
     try {
-      if ( core.utilities.isNonEmptyString(url) ) throw new core.errors.TypeValidationError('url', String);
+      if (
+        (typeof url !== 'string')
+        || !core.utilities.validation.isNonEmptyString(url)
+      ) throw new core.errors.TypeValidationError('url', String);
 
+      /**
+       * The URL of the photo
+       */
       this.url = url;
 
+      // initialize the component
       this._initialize();
+
+      // open the photo viewer
+      this.open();
     }
     catch (error) {
       this.logError(error);
@@ -49,43 +67,25 @@ class PhotoViewer extends LandscapeComponent {
     }
   }
 
-  _eventComponentClick(event) {
-    try {
-      this.logDebug(`${PhotoViewer.prototype._eventComponentClick.name}`);
-
-      this.close();
-    }
-    catch (error) {
-      this.logError(error);
-    }
-  }
-
-  _eventComponentKeyup(event) {
-    try {
-      this.logDebug(`${PhotoViewer.prototype._eventComponentKeyup.name} → event.key: “${event.key}”`);
-
-      if (event.key === 'Escape') {
-        this.close();
-      }
-    }
-    catch (error) {
-      this.logError(error);
-    }
-  }
-
   async _eventImageLoad(event) {
     try {
-      this.logDebug(`${PhotoViewer.prototype._eventImageLoad.name} → event.currentTarget.src: “${event.currentTarget.src}”`);
+      this.logDebug({
+        _functionName: PhotoViewer.prototype._eventImageLoad.name,
+        event: event,
+        src: event.currentTarget.src
+      });
 
-      // define the image’s element
+      /**
+       * The image `Element` (`<img>`)
+       */
       const imageElement = event.currentTarget;
 
-      // display the photo (add it to the PhotoViewer element)
+      // display the photo (add it to the component element)
       this.element.appendChild(imageElement);
 
       // trigger the initial animation
-      await this._delay(PhotoViewer.REFERENCE.CSS_TRANSITION_DURATION.INITIAL);
-      imageElement.classList.remove('initial');
+      await core.utilities.delay(PhotoViewer.REFERENCE.CSS_TRANSITION_DURATION.INITIAL);
+      imageElement.classList.remove(PhotoViewer.REFERENCE.HTML_CLASS_NAME.INITIAL);
     }
     catch (error) {
       this.logError(error);
@@ -93,24 +93,49 @@ class PhotoViewer extends LandscapeComponent {
   }
 
   _initialize() {
-    this.logDebug(`${PhotoViewer.prototype._initialize.name}`);
+    this.logDebug({
+      _functionName: PhotoViewer.prototype._initialize.name
+    });
 
     // apply the component’s CSS class
     this.element.classList.add(PhotoViewer.REFERENCE.HTML_CLASS_NAME._);
 
-    // close the viewer when a click occurs
+    // close the component when it is clicked
     this.element.addEventListener(
       'click',
-      this._eventComponentClick.bind(this)
+      this._eventModalOverlayClick.bind(this)
     );
 
-    // close the viewer when ‘Escape’ is pressed
-    this.element.addEventListener(
-      'keyup',
-      this._eventComponentKeyup.bind(this)
-    );
+    // add the component to the document
+    document.body.appendChild(this.element);
+  }
 
-    // create the image element
+  /**
+   * Closes the photo viewer.
+   */
+  close() {
+    this.logDebug({
+      _functionName: PhotoViewer.prototype.close.name
+    });
+
+    // remove the component from the document
+    this.destroy();
+  }
+
+  /**
+   * Opens the photo viewer.
+   */
+  open() {
+    this.logDebug({
+      _functionName: PhotoViewer.prototype.open.name
+    });
+
+    // render a modal overlay
+    this._renderModalOverlay();
+
+    /**
+     * The image `Element` (`<img>`)
+     */
     const imageElement = document.createElement('img');
     imageElement.classList.add(PhotoViewer.REFERENCE.HTML_CLASS_NAME.INITIAL);
     imageElement.src = this.url;
@@ -121,21 +146,8 @@ class PhotoViewer extends LandscapeComponent {
       this._eventImageLoad.bind(this)
     );
 
-    // add the PhotoViewer to the DOM
-    document.body.appendChild(this.element);
-    this.element.tabIndex = 0; // allow the viewer to intercept keyupes …
-    this.element.focus(); // … and give it input focus
-  }
-
-  close() {
-    try {
-      this.logDebug(`${PhotoViewer.prototype.close.name}`);
-
-      this.destroy();
-    }
-    catch (error) {
-      this.logError(error);
-    }
+    // give the component input focus
+    this.element.focus();
   }
 }
 

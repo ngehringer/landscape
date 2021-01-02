@@ -11,20 +11,30 @@
   "private": true,
   "repository": {
     "type": "git",
-    "url": "https://github.com/ngehringer/landscape.git"
+    "url": "git+https://github.com/ngehringer/landscape.git"
   },
+  "type": "module",
   "version": "1.0.0",
-  "dependencies": {},
   "devDependencies": {
     "@backwater-systems/core": "file:../Core",
-    "del": "^6.0.0",
-    "eslint": "^7.12.1",
-    "gulp": "^4.0.2",
-    "gulp-replace": "^1.0.0"
+    "cpy-cli": "^3.1.1",
+    "del-cli": "^3.0.1",
+    "eslint": "^7.17.0",
+    "replace-in-file": "^6.1.0"
   },
   "scripts": {
-    "build": "gulp build",
-    "lint": "eslint src",
+    "build": "npm run build:production",
+    "build:development": "npm run clean:build && npm run build:development:javascript && npm run build:development:css && npm run build:development:assets",
+    "build:development:assets": "cpy '**/*' '../../../../dist/assets/backwater-systems/core/' --cwd 'node_modules/@backwater-systems/core/dist/' --parents",
+    "build:development:css": "cpy '**/*.css' '../dist/' --cwd 'src/' --parents",
+    "build:development:javascript": "cpy '**/*.js' '../dist/' --cwd 'src/' --parents && node build/updateAssetPaths.js",
+    "build:production": "npm run clean:build && npm run build:production:javascript && npm run build:production:css && npm run build:production:assets",
+    "build:production:assets": "cpy '**/*' '../../../../dist/assets/backwater-systems/core/' --cwd 'node_modules/@backwater-systems/core/dist/' --parents",
+    "build:production:css": "cpy '**/*.css' '../dist/' --cwd 'src/' --parents",
+    "build:production:javascript": "cpy '**/*.js' '../dist/' --cwd 'src/' --parents && node build/updateAssetPaths.js",
+    "clean": "npm run clean:build",
+    "clean:build": "del-cli dist/",
+    "lint": "eslint src/",
     "test": "echo \"Error: no test specified\" && exit 1"
   }
 }

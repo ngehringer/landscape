@@ -1,7 +1,10 @@
-import * as core from '@backwater-systems/core';
 import ModalLandscapeComponent from '../ModalLandscapeComponent.js';
 
 
+/**
+ * A modal flyout panel.
+ * @extends ModalLandscapeComponent
+ */
 class FlyoutPanel extends ModalLandscapeComponent {
   static get CLASS_NAME() { return `@backwater-systems/landscape.components.${FlyoutPanel.name}`; }
 
@@ -12,6 +15,7 @@ class FlyoutPanel extends ModalLandscapeComponent {
   }
 
   static get REFERENCE() {
+    /** The HTML class name of the component */
     const HTML_CLASS_NAME = `Landscape-${FlyoutPanel.name}`;
 
     return Object.freeze({
@@ -31,8 +35,10 @@ class FlyoutPanel extends ModalLandscapeComponent {
         VISIBLE: 'Landscape-visible'
       }),
       SYMBOLS: Object.freeze({
-        SWITCH_ACTIVE: '▲',
-        SWITCH_INACTIVE: '▼'
+        SWITCH: Object.freeze({
+          OFF: '▼',
+          ON: '▲'
+        })
       })
     });
   }
@@ -45,25 +51,35 @@ class FlyoutPanel extends ModalLandscapeComponent {
     targetHTMLID
   }) {
     super({
-      'closeOnModalOverlayClick': true,
-      'debug': debug,
-      'targetElement': targetElement,
-      'targetHTMLID': targetHTMLID
+      closeOnModalOverlayClick: true,
+      debug: debug,
+      targetElement: targetElement,
+      targetHTMLID: targetHTMLID
     });
 
     try {
+      /**
+       * Whether the panel is closed
+       */
       this.closed = true;
 
-      this.closeEvent = core.utilities.validateType(closeEvent, Function)
-        ? closeEvent
+      /**
+       * An event callback that fires after the panel is closed
+       */
+      this.closeEvent = (typeof closeEvent === 'function')
+        ? closeEvent.bind(this)
         : null
       ;
 
-      this.openEvent = core.utilities.validateType(openEvent, Function)
-        ? openEvent
+      /**
+       * An event callback that fires after the panel is opened
+       */
+      this.openEvent = (typeof openEvent === 'function')
+        ? openEvent.bind(this)
         : null
       ;
 
+      // initialize the component
       this._initialize();
     }
     catch (error) {
@@ -74,19 +90,25 @@ class FlyoutPanel extends ModalLandscapeComponent {
   }
 
   _calculatePosition() {
-    // determine the dimensions of the viewport
+    /**
+     * The dimensions (height, width) of the viewport
+     */
     const {
       innerHeight: viewportHeight,
       innerWidth: viewportWidth
     } = window;
 
-    // determine the dimensions of the panel
+    /**
+     * The dimensions (height, width) of the contents
+     */
     const {
       offsetHeight: contentsElementHeight,
       offsetWidth: contentsElementWidth
     } = this.contentsElement;
 
-    // determine the coordinates of the panel’s switch
+    /**
+     * The coordinates (bottom, left, right, top) of the panel switch
+     */
     const {
       bottom: switchElementY2,
       left: switchElementX1,
@@ -94,9 +116,34 @@ class FlyoutPanel extends ModalLandscapeComponent {
       top: switchElementY1
     } = this.switchElement.getBoundingClientRect();
 
-    this.logDebug(`${FlyoutPanel.prototype._calculatePosition.name} → viewport (width, height): (${viewportWidth}, ${viewportHeight}) | contents element (width, height): (${contentsElementWidth}, ${contentsElementHeight}) | switch element (X1, X2, Y1, Y2): (${switchElementX1}, ${switchElementX2}, ${switchElementY1}, ${switchElementY2})`);
+    this.logDebug({
+      _functionName: FlyoutPanel.prototype._calculatePosition.name,
+      contentsElement: {
+        height: contentsElementHeight,
+        width: contentsElementWidth
+      },
+      switchElement: {
+        x1: switchElementX1,
+        x2: switchElementX2,
+        y1: switchElementY1,
+        y2: switchElementY2
+      },
+      viewport: {
+        height: viewportHeight,
+        width: viewportWidth
+      }
+    });
 
-    let left, right;
+    /**
+     * The left offset of the contents element
+     */
+    let left;
+
+    /**
+     * The right offset of the contents element
+     */
+    let right;
+
     // contents overflow the right side of the viewport
     if (switchElementX1 + contentsElementWidth > viewportWidth) {
       right = `${(viewportWidth - switchElementX2)}px`;
@@ -108,7 +155,16 @@ class FlyoutPanel extends ModalLandscapeComponent {
       right = null;
     }
 
-    let bottom, top;
+    /**
+     * The bottom offset of the contents element
+     */
+    let bottom;
+
+    /**
+     * The top offset of the contents element
+     */
+    let top;
+
     // contents overflow the bottom of the viewport
     if (switchElementY2 + contentsElementHeight > viewportHeight) {
       bottom = `${(viewportHeight - switchElementY1)}px`;
@@ -120,17 +176,28 @@ class FlyoutPanel extends ModalLandscapeComponent {
       bottom = null;
     }
 
+    this.logDebug({
+      _functionName: FlyoutPanel.prototype._calculatePosition.name,
+      bottom: bottom,
+      left: left,
+      right: right,
+      top: top
+    });
+
+    // set the position of the contents element
     this.contentsElement.style.top = top;
     this.contentsElement.style.bottom = bottom;
     this.contentsElement.style.left = left;
     this.contentsElement.style.right = right;
-
-    this.logDebug(`${FlyoutPanel.prototype._calculatePosition.name} → top: ${top} | bottom: ${bottom} | left: ${left} | right: ${right}`);
   }
 
-  async _eventSwitchClick() {
+  async _eventSwitchClick(event) {
     try {
-      this.logDebug(`${FlyoutPanel.prototype._eventSwitchClick.name} → this.closed: ${this.closed}`);
+      this.logDebug({
+        _functionName: FlyoutPanel.prototype._eventSwitchClick.name,
+        closed: this.closed,
+        event: event
+      });
 
       if (this.closed) {
         this.open();
@@ -145,44 +212,60 @@ class FlyoutPanel extends ModalLandscapeComponent {
   }
 
   _initialize() {
-    this.logDebug(`${FlyoutPanel.prototype._initialize.name}`);
+    this.logDebug({
+      _functionName: FlyoutPanel.prototype._initialize.name
+    });
 
     // apply the component’s CSS class
     this.element.classList.add(FlyoutPanel.REFERENCE.HTML_CLASS_NAME._);
 
-    // attempt to retrieve the switch element from the component element
+    /**
+     * The panel switch `Element`
+     *
+     * It has the `FlyoutPanel._eventSwitchClick()` function added as a `click` event listener.
+     */
     this.switchElement = this.element.querySelector(`.${FlyoutPanel.REFERENCE.HTML_CLASS_NAME.SWITCH}`);
+
     // create the switch element, if necessary
     if (this.switchElement === null) {
       this.switchElement = document.createElement('div');
       this.switchElement.classList.add(FlyoutPanel.REFERENCE.HTML_CLASS_NAME.SWITCH);
-      this.switchElement.text = FlyoutPanel.REFERENCE.SYMBOLS.SWITCH_INACTIVE;
+      this.switchElement.textContent = FlyoutPanel.REFERENCE.SYMBOLS.SWITCH.OFF;
       this.element.insertBefore(this.switchElement, this.element.firstChild);
     }
-    // handle the switch element’s “click” event
+
+    // handle the switch element’s `click` event
     this.switchElement.addEventListener(
       'click',
       this._eventSwitchClick.bind(this)
     );
 
-    // attempt to retrieve the switch symbol element from the switch
+    /**
+     * The panel switch symbol `Element`
+     *
+     * It contains a text node containing one of the `FlyoutPanel.REFERENCE.SYMBOLS.SWITCH` values.
+     */
     this.switchSymbolElement = this.switchElement.querySelector(`.${FlyoutPanel.REFERENCE.HTML_CLASS_NAME.SWITCH_SYMBOL}`);
+
     // create the switch symbol element, if necessary
     if (this.switchSymbolElement === null) {
       this.switchSymbolElement = document.createElement('span');
       this.switchSymbolElement.classList.add(
         FlyoutPanel.REFERENCE.HTML_CLASS_NAME.SWITCH_SYMBOL,
-        FlyoutPanel.REFERENCE.HTML_CLASS_NAME.INTERACTIVE,
+        FlyoutPanel.REFERENCE.HTML_CLASS_NAME.INTERACTIVE
       );
       this.switchSymbolElement.textContent = this.closed
-        ? FlyoutPanel.REFERENCE.SYMBOLS.SWITCH_INACTIVE
-        : FlyoutPanel.REFERENCE.SYMBOLS.SWITCH_ACTIVE
+        ? FlyoutPanel.REFERENCE.SYMBOLS.SWITCH.OFF
+        : FlyoutPanel.REFERENCE.SYMBOLS.SWITCH.ON
       ;
       this.switchElement.insertBefore(this.switchSymbolElement, this.switchElement.firstChild);
     }
 
-    // attempt to retrieve the contents element from the component element
+    /**
+     * The panel contents `Element`
+     */
     this.contentsElement = this.element.querySelector(`.${FlyoutPanel.REFERENCE.HTML_CLASS_NAME.CONTENTS}`);
+
     // create the contents element, if necessary
     if (this.contentsElement === null) {
       this.contentsElement = document.createElement('div');
@@ -190,10 +273,16 @@ class FlyoutPanel extends ModalLandscapeComponent {
     }
   }
 
+  /**
+   * Closes the panel.
+   */
   async close() {
-    this.logDebug(`${FlyoutPanel.prototype.close.name} → this.closed: ${this.closed}`);
+    this.logDebug({
+      _functionName: FlyoutPanel.prototype.close.name,
+      closed: this.closed
+    });
 
-    // ensure that the panel is not already closed
+    // abort if the panel is already closed
     if (this.closed) return;
 
     // indicate that the panel is closed
@@ -205,33 +294,41 @@ class FlyoutPanel extends ModalLandscapeComponent {
     // remove the modal overlay
     await this._unrenderModalOverlay();
 
-    // update the switch’s symbol
-    this.switchElement.firstChild.textContent = FlyoutPanel.REFERENCE.SYMBOLS.SWITCH_INACTIVE;
+    // update the switch
+    this.switchElement.classList.remove(FlyoutPanel.REFERENCE.HTML_CLASS_NAME.ACTIVE);
+    this.switchElement.firstChild.textContent = FlyoutPanel.REFERENCE.SYMBOLS.SWITCH.OFF;
   }
 
+  /**
+   * Opens the panel.
+   */
   open() {
-    this.logDebug(`${FlyoutPanel.prototype.open.name} → this.closed: ${this.closed}`);
+    this.logDebug({
+      _functionName: FlyoutPanel.prototype.open.name,
+      closed: this.closed
+    });
 
-    // ensure that the panel is not already open
+    // abort if the panel is not already open
     if (!this.closed) return;
 
     // indicate that the panel is opened
     this.closed = false;
 
-    // render the modal overlay
+    // render a modal overlay
     this._renderModalOverlay();
 
-    // determine the panel’s initial position in the viewport (the panel is hidden, so its height and width are 0)
+    // determine the panel’s initial position in the viewport (the panel is not visible, so its height and width are 0)
     this._calculatePosition();
 
     // show the panel’s contents
     this.contentsElement.classList.add(FlyoutPanel.REFERENCE.HTML_CLASS_NAME.VISIBLE);
 
-    // reposition the panel in the viewport, accounting for its actual height and width value
+    // reposition the panel in the viewport, accounting for its actual height and width value now that it is visible
     this._calculatePosition();
 
-    // update the switch’s symbol
-    this.switchElement.firstChild.textContent = FlyoutPanel.REFERENCE.SYMBOLS.SWITCH_ACTIVE;
+    // update the switch
+    this.switchElement.classList.add(FlyoutPanel.REFERENCE.HTML_CLASS_NAME.ACTIVE);
+    this.switchElement.firstChild.textContent = FlyoutPanel.REFERENCE.SYMBOLS.SWITCH.ON;
   }
 }
 

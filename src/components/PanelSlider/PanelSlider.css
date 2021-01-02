@@ -1,0 +1,100 @@
+.Landscape-PanelSlider {
+  position: relative;
+  height: 100%;
+  width: 100%;
+}
+
+.Landscape-PanelSlider-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  overflow: hidden;
+  height: 100%;
+  width: 100%;
+  transition:
+    filter 800ms ease,
+    opacity 800ms,
+    transform 800ms
+  ;
+}
+
+.Landscape-PanelSlider-panel:not(.Landscape-visible) {
+  display: none;
+}
+
+.Landscape-PanelSlider-panel.Landscape-PanelSlider-animate {
+  overflow-y: hidden; /* remove the vertical scrollbar when animating between panels */
+  opacity: 0;
+  pointer-events: none; /* deactivate mouse events when animating between panels */
+  filter: blur(100px);
+}
+
+.Landscape-PanelSlider-panel.Landscape-PanelSlider-animate.in {
+  /* this space intentionally left blank */
+}
+
+.Landscape-PanelSlider-panel.Landscape-PanelSlider-animate.left {
+  transform: translateX(-100%);
+}
+
+.Landscape-PanelSlider-panel.Landscape-PanelSlider-animate.right {
+  transform: translateX(100%);
+}
+
+.Landscape-PanelSlider-panel.Landscape-PanelSlider-animate.down {
+  transform: translateY(100%);
+}
+
+.Landscape-PanelSlider-panel.Landscape-PanelSlider-animate.up {
+  transform: translateY(-100%);
+}
+
+.Landscape-PanelSlider-panel-contents {
+  overflow: auto;
+  height: 100%;
+  width: 100%;
+}
+
+.Landscape-PanelSlider-panel-contents-container {
+  height: 100%;
+  width: 100%;
+}
+
+
+/* image panel */
+
+.Landscape-PanelSlider-panel.Landscape-PanelSlider-image-panel img {
+  max-height: 100%;
+  max-width: 100%;
+}
+
+.Landscape-PanelSlider-panel.Landscape-PanelSlider-image-panel .Landscape-PanelSlider-panel-contents-container {
+  overflow: hidden;
+}
+
+
+/* THEME: translucent */
+
+.translucent .Landscape-PanelSlider-panel-contents {
+  box-sizing: border-box;
+  padding: /*2vh*/ 0 4vw;
+}
+
+/* HACK: (Gecko/Trident) Add top and bottom padding to elements that overflow their container (CSS padding proper is clipped on overflow) */
+.translucent .Landscape-PanelSlider-panel-contents::after,
+.translucent .Landscape-PanelSlider-panel-contents::before {
+  content: '';
+  display: block;
+  height: 2vh;
+}
+
+.translucent .Landscape-PanelSlider-panel-contents-container {
+  background-color: rgba(255, 255, 255, 0.2775);
+  height: auto;
+  width: auto;
+  max-width: 80%;
+  border-radius: 2vw;
+  color: rgba(0, 0, 0, 0.6);
+}

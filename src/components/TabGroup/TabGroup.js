@@ -1,4 +1,5 @@
 import * as core from '@backwater-systems/core';
+
 import * as dataSources from '../../dataSources/index.js';
 import LandscapeComponent from '../LandscapeComponent.js';
 
@@ -13,6 +14,7 @@ class TabGroup extends LandscapeComponent {
   }
 
   static get REFERENCE() {
+    /** The HTML class name of the component */
     const HTML_CLASS_NAME = `Landscape-${TabGroup.name}`;
 
     return Object.freeze({
@@ -44,35 +46,55 @@ class TabGroup extends LandscapeComponent {
     targetHTMLID
   }) {
     super({
-      'debug': debug,
-      'targetElement': targetElement,
-      'targetHTMLID': targetHTMLID
+      debug: debug,
+      targetElement: targetElement,
+      targetHTMLID: targetHTMLID
     });
 
     try {
+      /**
+       * The ID of the current (active) tab
+       */
       this.currentTabID = null;
-      this.tabList = null;
 
-      this.initialTabID = core.utilities.isNonEmptyString(initialTab)
+      /**
+       * A list of metadata about the tabs
+       */
+      this.tabs = null;
+
+      /**
+       * The ID of the initial tab
+       */
+      this.initialTabID = core.utilities.validation.isNonEmptyString(initialTab)
         ? initialTab
         : null
       ;
 
-      this.style = core.utilities.isNonEmptyString(style)
+      /**
+       * The style (CSS class suffix) of the component
+       */
+      this.style = core.utilities.validation.isNonEmptyString(style)
         ? style
         : null
       ;
 
-      this.tabLoadEvent = core.utilities.validateType(tabLoadEvent, Function)
-        ? tabLoadEvent
+      /**
+       * An event callback that fires after a tab is loaded
+       */
+      this.tabLoadEvent = (typeof tabLoadEvent === 'function')
+        ? tabLoadEvent.bind(this)
         : null
       ;
 
-      this.tabSelectEvent = core.utilities.validateType(tabSelectEvent, Function)
-        ? tabSelectEvent
+      /**
+       * An event callback that fires after a tab is loaded
+       */
+      this.tabSelectEvent = (typeof tabSelectEvent === 'function')
+        ? tabSelectEvent.bind(this)
         : null
       ;
 
+      // initialize the component
       this._initialize();
     }
     catch (error) {
@@ -83,17 +105,26 @@ class TabGroup extends LandscapeComponent {
   }
 
   async loadTab(tabID) {
-    this.logDebug(`${TabGroup.prototype.loadTab.name} → tabID: ${core.utilities.isNonEmptyString(tabID) ? `“${tabID}”` : '[null]'}`);
+    if (
+      (typeof tabID !== 'string')
+      || !core.utilities.validation.isNonEmptyString(tabID)
+    ) throw new core.errors.TypeValidationError('tabID', String);
 
-    if ( !core.utilities.isNonEmptyString(tabID) ) throw new Error('Invalid ‘tabID’ specified.');
+    this.logDebug({
+      _functionName: TabGroup.prototype.loadTab.name,
+      tabID: tabID
+    });
 
+    /**
+     * Metadata about the loading tab
+     */
     const tabMetadata = this._getTabMetadata(tabID);
 
     if (tabMetadata.dataSource !== null) {
       if (tabMetadata.contentsHTMLID === null) throw new Error(`Tab (ID: “${tabMetadata.id}”) does not specify a contents HTML ID.`);
       if (tabMetadata.contentsElement === null) throw new Error(`Tab (ID: “${tabMetadata.id}”) does not have a valid reference to a contents element.`);
 
-      // retrieve the tab’s markup and insert it into the DOM
+      // retrieve the tab contents and insert it into the document
       await tabMetadata.dataSource.fetch();
     }
 
@@ -108,17 +139,28 @@ class TabGroup extends LandscapeComponent {
 
   async selectTab(tabID) {
     try {
-      if ( !core.utilities.isNonEmptyString(tabID) ) throw new Error('Invalid ‘tabID’ specified.');
+      if (
+        (typeof tabID !== 'string')
+        || !core.utilities.validation.isNonEmptyString(tabID)
+      ) throw new core.errors.TypeValidationError('tabID', String);
 
-      this.logDebug(`${TabGroup.prototype.selectTab.name} → tabID: “${tabID}” | current tab: ${(this.currentTabID === null) ? '[null]' : `“${this.currentTabID}”`}`);
+      this.logDebug({
+        _functionName: TabGroup.prototype.selectTab.name,
+        currentTabID: this.currentTabID,
+        tabID: tabID
+      });
 
-      // retrieve the metadata about the tab being selected
+      /**
+       * Metadata about the selected tab
+       */
       const tabMetadata = this._getTabMetadata(tabID);
 
       // ensure a new tab is being selected
       if (tabMetadata.id === this.currentTabID) return;
 
-      // retrieve information about the (soon-to-be-previously) current tab
+      /**
+       * Metadata about the (soon-to-be-previously) current tab
+       */
       const previousTab = (this.currentTabID === null) ? null : this._getTabMetadata(this.currentTabID);
 
       // update the current tab
@@ -142,14 +184,22 @@ class TabGroup extends LandscapeComponent {
         previousTab.contentsElement.classList.remove(TabGroup.REFERENCE.HTML_CLASS_NAME.VISIBLE);
       }
 
-      // remove the visual active tab indicator from all tabs
+      /**
+       * A list of the active tab `Element` nodes
+       */
       const activeTabElementList = Array.from(
         this.element.querySelectorAll(`.${TabGroup.REFERENCE.HTML_CLASS_NAME.TAB}.${TabGroup.REFERENCE.HTML_CLASS_NAME.ACTIVE}`)
       );
-      for (const tabElement of activeTabElementList) {
-        tabElement.classList.remove(TabGroup.REFERENCE.HTML_CLASS_NAME.ACTIVE);
 
-        this.logDebug(`${TabGroup.prototype.selectTab.name} → Removed “${TabGroup.REFERENCE.HTML_CLASS_NAME.ACTIVE}” class.`);
+      // remove the visual active tab indicator from all tabs
+      for (const tabElement of activeTabElementList) {
+        this.logDebug({
+          _functionName: TabGroup.prototype.selectTab.name,
+          className: TabGroup.REFERENCE.HTML_CLASS_NAME.ACTIVE,
+          tabID: tabElement.getAttribute(TabGroup.REFERENCE.DATA_ATTRIBUTE_NAME.TAB_ID)
+        });
+
+        tabElement.classList.remove(TabGroup.REFERENCE.HTML_CLASS_NAME.ACTIVE);
       }
 
       // visually indicate the active tab
@@ -167,6 +217,12 @@ class TabGroup extends LandscapeComponent {
 
   async _eventTabClick(tabID, event) {
     try {
+      this.logDebug({
+        _functionName: TabGroup.prototype._eventTabClick.name,
+        event: event,
+        tabID: tabID
+      });
+
       await this.selectTab(tabID);
     }
     catch (error) {
@@ -175,14 +231,23 @@ class TabGroup extends LandscapeComponent {
   }
 
   _getTabMetadata(tabID) {
-    this.logDebug(`${TabGroup.prototype._getTabMetadata.name} → tabID: ${core.utilities.isNonEmptyString(tabID) ? `“${tabID}”` : '[null]'}`);
+    this.logDebug({
+      _functionName: TabGroup.prototype._getTabMetadata.name,
+      tabID: tabID
+    });
 
-    const tab = this.tabList.find(
+    /**
+     * Metadata about the tab with the specified ID
+     */
+    const tab = this.tabs.find(
       (_tab) => (_tab.id === tabID)
     );
 
-    // ensure a valid tab in the group is being selected
-    if ( !core.utilities.validateType(tab, Object) ) throw new Error(`Tab (ID: “${tabID}”) does not exist.`);
+    // abort if an invalid tab in the group is being selected
+    if (
+      (typeof tab !== 'object')
+      || (tab === null)
+    ) throw new Error(`Tab (ID: “${tabID}”) does not exist.`);
 
     return tab;
   }
@@ -197,11 +262,11 @@ class TabGroup extends LandscapeComponent {
     }
 
     // construct a list of tab metadata from the component element
-    this.tabList = this._queryElementTabList();
+    this.tabs = this._queryElementTabList();
 
-    if (this.tabList.length === 0) throw new Error(`No tabs exist in #${this.htmlID}.`);
+    if (this.tabs.length === 0) throw new Error(`No tabs exist in #${this.htmlID}.`);
 
-    for (const tab of this.tabList) {
+    for (const tab of this.tabs) {
       // apply the tab contents element’s CSS class, if applicable
       if (tab.contentsElement !== null) {
         tab.contentsElement.classList.add(TabGroup.REFERENCE.HTML_CLASS_NAME.TAB_CONTENTS);
@@ -213,18 +278,18 @@ class TabGroup extends LandscapeComponent {
         this._eventTabClick.bind(this, tab.id)
       );
 
-      // bind the tab data source’s events
+      // bind the tab `DataSource`’s events
       if (
         (tab.dataSource !== null)
-        && core.utilities.validateType(tab.contentsElement, Element)
+        && (tab.contentsElement !== null)
       ) {
-        // define the tab data source’s “fetch” event handler
+        // define the tab `DataSource`’s `fetch` event handler
         tab.dataSource.registerEventHandler(
           'fetch',
-          (data) => { this._renderTabContents(data.text, tab.contentsElement); }
+          (data) => { this._renderTabContents(data, tab.contentsElement); }
         );
 
-        // define the tab data source’s “fetchError” event handler
+        // define the tab `DataSource`’s `fetchError` event handler
         tab.dataSource.registerEventHandler(
           'fetchError',
           (error) => { this.logError(error); }
@@ -232,61 +297,82 @@ class TabGroup extends LandscapeComponent {
       }
     }
 
-    // determine the initial tab
+    /**
+     * The ID of the initial tab (evaluated)
+     */
     const initialTabID = (
-      // if an initial tab is specified, …
+      // if specified, …
       (this.initialTabID !== null)
-      // … ensure it’s valid
-      && this.tabList
-        .map(
-          (tab) => tab.id
-        )
-        .some(
-          (tabID) => (tabID === this.initialTabID)
-        )
+      // … ensure it’s in the list of tabs
+      && this.tabs.some( (tab) => (tab.id === this.initialTabID) )
     )
       ? this.initialTabID
       // default: the first tab in the group
-      : this.tabList[0].id
+      : this.tabs[0].id
     ;
 
-    this.logDebug(`${TabGroup.prototype._initialize.name} → evaluated initial tab: “${initialTabID}” | configured initial tab: ${(this.initialTabID === null) ? '[null]' : `“${this.initialTabID}”`}`);
+    if (
+      (this.initialTabID !== null)
+      && (this.initialTabID !== initialTabID)
+    ) {
+      this.logWarning(`The evaluated initial tab ID “${initialTabID}” does not match the configured initial tab ID “${this.initialTabID}”.`);
+    }
 
     // select the initial tab
     this.selectTab(initialTabID);
   }
 
   _renderTabContents(html, tabContentsElement) {
-    this.logDebug(`${TabGroup.prototype._renderTabContents.name} → html: ${core.utilities.isNonEmptyString(html) ? `${core.utilities.formatNumber(html.length)} ${core.utilities.pluralize('byte', html.length)}` : '[invalid]'}`);
+    this.logDebug({
+      _functionName: TabGroup.prototype._renderTabContents.name,
+      htmlByteCount: core.utilities.validation.isNonEmptyString(html) ? html.length : 0
+    });
 
+    // insert the tab contents’ HTML into the tab contents element
     core.webUtilities.injectHTML({
-      'debug': this.debug,
-      'html': html,
-      'replace': true,
-      'target': tabContentsElement
+      debug: this.debug,
+      html: html,
+      logger: this.logger,
+      replace: true,
+      sourceID: this._getLoggingSourceID({ functionName: TabGroup.prototype._renderTabContents.name }),
+      target: tabContentsElement
     });
   }
 
   _queryElementTabList() {
+    /**
+     * A list of metadata about the tabs (constructed from the DOM)
+     */
     const tabMetadataList = Array.from(
       this.element.querySelectorAll(`.${TabGroup.REFERENCE.HTML_CLASS_NAME.TAB}`)
     )
       .map(
         (tabElement) => {
-          // retrieve the tab’s identifier
+          /**
+           * The ID of the tab (its `Element`’s `data-tab-id` HTML attribute value)
+           */
           const tabID = tabElement.getAttribute(TabGroup.REFERENCE.DATA_ATTRIBUTE_NAME.TAB_ID);
 
           // ensure the tab’s identifier is valid
-          if ( !core.utilities.isNonEmptyString(tabID) ) return null;
+          if ( !core.utilities.validation.isNonEmptyString(tabID) ) return null;
 
-          // attempt to retrieve the tab contents element’s HTML ID
+          /**
+           * The HTML ID of the tab contents `Element`
+           */
           let contentsHTMLID = tabElement.getAttribute(TabGroup.REFERENCE.DATA_ATTRIBUTE_NAME.TAB_CONTENTS_HTML_ID);
-          if ( !core.utilities.isNonEmptyString(contentsHTMLID) ) {
+          if (
+            (typeof contentsHTMLID !== 'string')
+            || !core.utilities.validation.isNonEmptyString(contentsHTMLID)
+          ) {
             contentsHTMLID = null;
           }
 
-          // attempt to retrieve the tab contents element from the DOM
-          let contentsElement = null;
+          /**
+           * The tab contents `Element`
+           */
+          let contentsElement;
+
+          // attempt to retrieve the tab contents element from the document
           if (contentsHTMLID !== null) {
             contentsElement = document.querySelector(`#${contentsHTMLID}`);
             if (contentsElement === null) {
@@ -294,34 +380,38 @@ class TabGroup extends LandscapeComponent {
             }
           }
 
-          // attempt to retrieve the tabs contents’ load state
+          /**
+           * Whether the tab contents are loaded
+           */
           const contentsLoaded = tabElement.getAttribute(TabGroup.REFERENCE.DATA_ATTRIBUTE_NAME.TAB_CONTENTS_LOADED);
 
-          // attempt to retrieve the tab contents’ URL
+          /**
+           * The URL from which the tab contents will be loaded
+           */
           const url = tabElement.getAttribute(TabGroup.REFERENCE.DATA_ATTRIBUTE_NAME.URL);
 
-          // define the tab’s data source
-          const dataSource = core.utilities.isNonEmptyString(url)
+          /**
+           * The `DataSource` that provides the tab’s contents
+           */
+          const dataSource = core.utilities.validation.isNonEmptyString(url)
             ? new dataSources.AjaxDataSource({
-              'debug': this.debug,
-              'url': url
+              debug: this.debug,
+              url: url
             })
             : null
           ;
 
           return {
-            'id': tabID,
-            'contentsElement': contentsElement,
-            'contentsHTMLID': contentsHTMLID,
-            'contentsLoaded': (contentsLoaded === 'true') ? true : null,
-            'dataSource': dataSource,
-            'element': tabElement
+            contentsElement: contentsElement,
+            contentsHTMLID: contentsHTMLID,
+            contentsLoaded: (contentsLoaded === 'true') ? true : null,
+            dataSource: dataSource,
+            element: tabElement,
+            id: tabID
           };
         }
       )
-      .filter(
-        (tabMetadata) => (tabMetadata !== null)
-      )
+      .filter( (tabMetadata) => (tabMetadata !== null) )
     ;
 
     return tabMetadataList;

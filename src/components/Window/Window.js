@@ -1,18 +1,27 @@
 import * as core from '@backwater-systems/core';
+
 import * as dataSources from '../../dataSources/index.js';
 import ModalLandscapeComponent from '../ModalLandscapeComponent.js';
 
-
+/**
+ * A resizable, minimizable modal window.
+ * @extends ModalLandscapeComponent
+ */
 class Window extends ModalLandscapeComponent {
   static get CLASS_NAME() { return `@backwater-systems/landscape.components.${Window.name}`; }
 
   static get DEFAULTS() {
     return Object.freeze({
-      DEBUG: ModalLandscapeComponent.DEFAULTS.DEBUG
+      DEBUG: ModalLandscapeComponent.DEFAULTS.DEBUG,
+      SIZE: {
+        height: null,
+        width: null
+      }
     });
   }
 
   static get REFERENCE() {
+    /** The HTML class name of the component */
     const HTML_CLASS_NAME = `Landscape-${Window.name}`;
 
     return Object.freeze({
@@ -54,61 +63,65 @@ class Window extends ModalLandscapeComponent {
     dataSource,
     dataSourceFetchEvent = null,
     debug = Window.DEFAULTS.DEBUG,
+    size = Window.DEFAULTS.SIZE,
     targetElement,
     targetHTMLID,
     title = null,
     windowID = null
   }) {
     super({
-      'createTarget': true,
-      'debug': debug,
-      'targetElement': targetElement,
-      'targetHTMLID': targetHTMLID
+      closeOnModalOverlayClick: false,
+      createTarget: true,
+      debug: debug,
+      targetElement: targetElement,
+      targetHTMLID: targetHTMLID
     });
 
     try {
-      this.columnOptionsFlyoutPanelList = [];
+      /**
+       * Whether the window is minimized
+       */
+      this.minimized = false;
 
       /**
-       * Indicates whether the window is opened
-       * @type {boolean}
+       * Whether the window is opened
        */
       this.opened = false;
 
       /**
        * An event callback that fires after the window’s contents are rendered
-       * @type {(function|null)}
        */
-      this._eventCallbackContentsRender = core.utilities.validateType(contentsRenderEvent, Function)
-        ? contentsRenderEvent
+      this._eventCallbackContentsRender = (typeof contentsRenderEvent === 'function')
+        ? contentsRenderEvent.bind(this)
         : null
       ;
 
       /**
-       * An event callback that fires after the window’s DataSource emits a “fetch” event
-       * @type {(function|null)}
+       * An event callback that fires after the window’s `DataSource` emits a `fetch` event
        */
-      this._eventCallbackDataSourceFetch = core.utilities.validateType(dataSourceFetchEvent, Function)
+      this._eventCallbackDataSourceFetch = (typeof dataSourceFetchEvent === 'function')
         ? dataSourceFetchEvent
         : null
       ;
 
       /**
-       * Provides the contents of the window
-       * @type {(DataSource|null)}
+       * The `DataSource` that provides the window’s contents
        */
-      this.dataSource = core.utilities.validateType(dataSource, dataSources.BaseDataSource)
+      this.dataSource = (
+        (typeof dataSource === 'object')
+        && (dataSource instanceof dataSources.BaseDataSource)
+      )
         ? dataSource
         : null
       ;
       if (this.dataSource !== null) {
-        // render the window’s contents on the data source’s “fetch” event
+        // render the window’s contents on the `DataSource`’s `fetch` event
         this.dataSource.registerEventHandler(
           'fetch',
           this._eventDataSourceFetch.bind(this)
         );
 
-        // define the data source’s “fetchError” event handler
+        // register the `DataSource`’s `fetchError` event handler
         this.dataSource.registerEventHandler(
           'fetchError',
           this._eventDataSourceFetchError.bind(this)
@@ -116,38 +129,67 @@ class Window extends ModalLandscapeComponent {
       }
 
       /**
-       * The window’s title
-       * @type {string}
+       * The height and width (range 0 – 100, in `vh` and `vw` units, respectively) of the window’s contents element, if specified
        */
-      this.title = core.utilities.isNonEmptyString(title)
+      this.size = (
+        (typeof size === 'object')
+        && (
+          (
+            (typeof size.height === 'number')
+            && (size.height >= 0)
+            && (size.height <= 100)
+          )
+          || (size.height === null)
+        )
+        && (
+          (
+            (typeof size.width === 'number')
+            && (size.width >= 0)
+            && (size.width <= 100)
+          )
+          || (size.width === null)
+        )
+      )
+        ? size
+        : Window.DEFAULTS.SIZE
+      ;
+
+      /**
+       * The title of the window
+       */
+      this.title = (
+        (typeof title === 'string')
+        && core.utilities.validation.isNonEmptyString(title)
+      )
         ? title
         : null
       ;
 
       /**
-       * The window’s identifier (uniqueness is enforced using this value if the window is registered with a window manager)
-       * @type {string}
+       * A unique identifier for the window (uniqueness is enforced using this value if the window is registered with a window manager)
        */
-      this.windowID = core.utilities.isNonEmptyString(windowID)
+      this.windowID = (
+        (typeof windowID === 'string')
+        && core.utilities.validation.isNonEmptyString(windowID)
+      )
         ? windowID
         : null
       ;
 
+      // initialize the component
       this._initialize();
 
-      // load the window’s data (asynchronously)
-      // HACK
+      // load the window’s contents and open the window (asynchronously)
       setTimeout(
-        (
-          async () => {
-            try {
-              await this.load();
-            }
-            catch (error) {
-              this.logError(error);
-            }
+        async () => {
+          try {
+            await this.load();
+            this.open();
           }
-        ).bind(this),
+          catch (error) {
+            this.logError(error);
+          }
+        },
         0
       );
     }
@@ -158,9 +200,12 @@ class Window extends ModalLandscapeComponent {
     }
   }
 
-  async _eventCloseButtonClick() {
+  async _eventCloseButtonClick(event) {
     try {
-      this.logDebug(`${Window.prototype._eventCloseButtonClick.name}`);
+      this.logDebug({
+        _functionName: Window.prototype._eventCloseButtonClick.name,
+        event: event
+      });
 
       await this.close();
     }
@@ -169,30 +214,45 @@ class Window extends ModalLandscapeComponent {
     }
   }
 
-  _eventDataSourceFetch(data) {
-    this.logDebug(`${Window.prototype._eventDataSourceFetch.name}`);
+  async _eventDataSourceFetch(data) {
+    this.logDebug({
+      _functionName: Window.prototype._eventDataSourceFetch.name,
+      data: data
+    });
 
-    if ( !core.utilities.validateType(data, Object) ) throw new core.errors.TypeValidationError('data', Object);
-    if ( !core.utilities.isNonEmptyString(data.text) ) throw new core.errors.TypeValidationError('data.text', String);
+    if (
+      (typeof data !== 'string')
+      || !core.utilities.validation.isNonEmptyString(data)
+    ) throw new core.errors.TypeValidationError('data', String);
 
-    this._renderContents(data.text);
+    await this._renderContents(data);
   }
 
   _eventDataSourceFetchError(error) {
-    this.logDebug(`${Window.prototype._eventDataSourceFetchError.name}`);
+    this.logDebug({
+      _functionName: Window.prototype._eventDataSourceFetchError.name,
+      error: error
+    });
 
     // log the error
     this.logError(error);
   }
 
-  async _eventMinimizeButtonClick() {
+  async _eventMinimizeButtonClick(event) {
     try {
-      this.logDebug(`${Window.prototype._eventMinimizeButtonClick.name}`);
+      this.logDebug({
+        _functionName: Window.prototype._eventMinimizeButtonClick.name,
+        event: event
+      });
 
+      // if the window is minimized …
       if (this.minimized) {
+        // … unminimize it
         this.unminimize();
       }
+      // if the window is unminimized …
       else {
+        // … minimize it
         await this.minimize();
       }
     }
@@ -203,58 +263,111 @@ class Window extends ModalLandscapeComponent {
 
   _eventTitleBarMousedown(event) {
     try {
-      // define the mouse’s initial coordinates
+      /**
+       * The initial (x, y) coordinates of the mouse at the time of the `mousedown` event
+       */
       let {
-        clientX: previousXCoordinate,
-        clientY: previousYCoordinate
+        clientX: previousMouseXCoordinate,
+        clientY: previousMouseYCoordinate
       } = event;
 
-      const _eventMousemove = (_event) => {
+      /**
+       * A `mousemove` event listener that is attached to the component element during a click-and-drag operation on the window’s title bar, to enable the window to move
+       */
+      const _eventMousemove = (mousemoveEvent) => {
         try {
-          // define the mouse’s current coordinates
+          /**
+           * The current (x, y) coordinates of the mouse
+           */
           const {
-            clientX: currentXCoordinate,
-            clientY: currentYCoordinate
-          } = _event;
+            clientX: currentMouseXCoordinate,
+            clientY: currentMouseYCoordinate
+          } = mousemoveEvent;
 
-          // calculate the distance that the mouse has moved since the last event
-          const xDelta = currentXCoordinate - previousXCoordinate;
-          const yDelta = currentYCoordinate - previousYCoordinate;
+          /**
+           * The distance that the mouse has moved in the “x” axis since the last event
+           */
+          const mouseXDelta = currentMouseXCoordinate - previousMouseXCoordinate;
 
-          // ensure that movement has occurred
+          /**
+           * The distance that the mouse has moved in the “y” axis since the last event
+           */
+          const mouseYDelta = currentMouseYCoordinate - previousMouseYCoordinate;
+
+          this.logDebug({
+            _functionName: _eventMousemove.name,
+            currentMouseCoordinates: {
+              x: currentMouseXCoordinate,
+              y: currentMouseYCoordinate
+            },
+            mouseCoordinatesDelta: {
+              x: mouseXDelta,
+              y: mouseYDelta
+            },
+            previousMouseCoordinates: {
+              x: previousMouseXCoordinate,
+              y: previousMouseYCoordinate
+            }
+          });
+
+          // abort if no movement has occurred
           if (
-            (xDelta === 0)
-            && ( yDelta === 0)
+            (mouseXDelta === 0)
+            && (mouseYDelta === 0)
           ) return;
 
-          this.logDebug(`${_eventMousemove.name} → current mouse coordinates: (X: ${currentXCoordinate}, Y: ${currentYCoordinate}); previous mouse coordinates: (X: ${previousXCoordinate}, Y: ${previousYCoordinate}); delta: (X: ${xDelta}, Y: ${yDelta})`);
-
           // update the mouse’s previous coordinates
-          previousXCoordinate = currentXCoordinate;
-          previousYCoordinate = currentYCoordinate;
+          previousMouseXCoordinate = currentMouseXCoordinate;
+          previousMouseYCoordinate = currentMouseYCoordinate;
 
-          // define the window’s current position
+          /**
+           * The current coordinates of the window
+           */
           const {
-            left: windowXCoordinate,
-            top: windowYCoordinate
+            left: currentWindowXCoordinate,
+            top: currentWindowYCoordinate
           } = this.element.getBoundingClientRect();
 
-          // calculate and set the window’s new position
-          this.setPosition({
-            x: windowXCoordinate + xDelta,
-            y: windowYCoordinate + yDelta
+          /**
+           * The window’s new coordinates
+           */
+          const newWindowCoordinates = {
+            x: currentWindowXCoordinate + mouseXDelta,
+            y: currentWindowYCoordinate + mouseYDelta
+          };
+
+          this.logDebug({
+            _functionName: _eventMousemove.name,
+            mouseCoordinatesDelta: {
+              x: mouseXDelta,
+              y: mouseYDelta
+            },
+            newWindowCoordinates: newWindowCoordinates,
+            previousMouseCoordinates: {
+              x: previousMouseXCoordinate,
+              y: previousMouseYCoordinate
+            }
           });
+
+          // set the window’s new position
+          this.setPosition(newWindowCoordinates);
         }
         catch (error) {
           this.logError(error);
         }
       };
 
-      const _eventTitleBarMouseup = () => {
+      /**
+       * A `mousemove` event listener that is attached to the component element during a click-and-drag operation on the window’s title bar, to end the click-and-drag operation
+       */
+      const _eventTitleBarMouseup = (mouseupEvent) => {
         try {
-          this.logDebug(`${_eventTitleBarMouseup.name}`);
+          this.logDebug({
+            _functionName: _eventTitleBarMouseup.name,
+            event: mouseupEvent
+          });
 
-          // remove the global “mousemove” event handler
+          // remove the global `mousemove` event handler
           window.removeEventListener(
             'mousemove',
             _eventMousemove
@@ -271,13 +384,13 @@ class Window extends ModalLandscapeComponent {
       // indicate that the window is in the “moving” state
       this.element.classList.add(Window.REFERENCE.HTML_CLASS_NAME.MOVING);
 
-      // handle the “mousemove” event (globally, to capture events originating outside of the title bar)
+      // handle the `mousemove` event (globally, to capture events originating outside of the title bar)
       window.addEventListener(
         'mousemove',
         _eventMousemove
       );
 
-      // handle the next “mouseup” event (globally, … as above)
+      // handle the next `mouseup` event (globally, … as above)
       window.addEventListener(
         'mouseup',
         _eventTitleBarMouseup,
@@ -292,7 +405,9 @@ class Window extends ModalLandscapeComponent {
   }
 
   _initialize() {
-    this.logDebug(`${Window.prototype._initialize.name}`);
+    this.logDebug({
+      _functionName: Window.prototype._initialize.name
+    });
 
     // window
 
@@ -306,7 +421,13 @@ class Window extends ModalLandscapeComponent {
 
     // title bar
 
+    /**
+     * The title bar `Element`
+     *
+     * It contains the window status indicator, title, minimize button, and close button.
+     */
     this.titleBarElement = this.element.querySelector(`.${Window.REFERENCE.HTML_CLASS_NAME.TITLE_BAR}`);
+
     // create the window’s title bar element, if necessary
     if (this.titleBarElement === null) {
       this.titleBarElement = document.createElement('div');
@@ -314,6 +435,7 @@ class Window extends ModalLandscapeComponent {
       // add the title bar element to the component
       this.element.appendChild(this.titleBarElement);
     }
+
     // handle the title bar’s mousedown event
     this.titleBarElement.addEventListener(
       'mousedown',
@@ -322,34 +444,55 @@ class Window extends ModalLandscapeComponent {
 
     // status indicator
 
+    /**
+     * The window status indicator `Element`
+     *
+     * It reflects the `:hover` and `:focus` state of the component.
+     */
     this.statusIndicatorElement = this.titleBarElement.querySelector(`.${Window.REFERENCE.HTML_CLASS_NAME.STATUS_INDICATOR}`);
+
     // create the window’s title bar element, if necessary
     if (this.statusIndicatorElement === null) {
       this.statusIndicatorElement = document.createElement('div');
       this.statusIndicatorElement.classList.add(Window.REFERENCE.HTML_CLASS_NAME.STATUS_INDICATOR);
+
       // add the title element to the title bar
       this.titleBarElement.appendChild(this.statusIndicatorElement);
     }
 
     // title
 
+    /**
+     * The title `Element`
+     *
+     * It contains a text node containing the `Window.title` property.
+     */
     this.titleElement = this.titleBarElement.querySelector(`.${Window.REFERENCE.HTML_CLASS_NAME.TITLE}`);
-    // create the window’s title bar element, if necessary
+
+    // create the window’s title element, if necessary
     if (this.titleElement === null) {
       this.titleElement = document.createElement('div');
       this.titleElement.classList.add(Window.REFERENCE.HTML_CLASS_NAME.TITLE);
+
       // set the title’s text
       if (this.title !== null) {
         this.titleElement.textContent = this.title;
         this.titleElement.title = this.title;
       }
+
       // add the title element to the title bar
       this.titleBarElement.appendChild(this.titleElement);
     }
 
     // minimize button
 
+    /**
+     * The minimize button `Element`
+     *
+     * It has the `Window._eventMinimizeButtonClick()` function added as a `click` event listener.
+     */
     this.minimizeButtonElement = this.titleBarElement.querySelector(`.${Window.REFERENCE.HTML_CLASS_NAME.MINIMIZE_BUTTON}`);
+
     // create the window’s minimize button element, if necessary
     if (this.minimizeButtonElement === null) {
       this.minimizeButtonElement = document.createElement('div');
@@ -357,9 +500,11 @@ class Window extends ModalLandscapeComponent {
       this.minimizeButtonElement.classList.add(Window.REFERENCE.HTML_CLASS_NAME.TITLE_BAR_BUTTON);
       this.minimizeButtonElement.classList.add(Window.REFERENCE.HTML_CLASS_NAME.MINIMIZE_BUTTON);
       this.minimizeButtonElement.title = 'Minimize window';
+
       // add the minimize button element to the title bar
       this.titleBarElement.appendChild(this.minimizeButtonElement);
     }
+
     // handle the minimize button’s click event
     this.minimizeButtonElement.addEventListener(
       'click',
@@ -368,7 +513,13 @@ class Window extends ModalLandscapeComponent {
 
     // close button
 
+    /**
+     * The close button `Element`
+     *
+     * It has the `Window._eventCloseButtonClick()` function added as a `click` event listener.
+     */
     this.closeButtonElement = this.titleBarElement.querySelector(`.${Window.REFERENCE.HTML_CLASS_NAME.CLOSE_BUTTON}`);
+
     // create the window’s close button element, if necessary
     if (this.closeButtonElement === null) {
       this.closeButtonElement = document.createElement('div');
@@ -376,9 +527,11 @@ class Window extends ModalLandscapeComponent {
       this.closeButtonElement.classList.add(Window.REFERENCE.HTML_CLASS_NAME.TITLE_BAR_BUTTON);
       this.closeButtonElement.classList.add(Window.REFERENCE.HTML_CLASS_NAME.CLOSE_BUTTON);
       this.closeButtonElement.title = 'Close window';
+
       // add the close button element to the title bar
       this.titleBarElement.appendChild(this.closeButtonElement);
     }
+
     // handle the close button’s click event
     this.closeButtonElement.addEventListener(
       'click',
@@ -387,43 +540,66 @@ class Window extends ModalLandscapeComponent {
 
     // contents
 
+    /**
+     * The window contents `Element`
+     */
     this.contentsElement = this.element.querySelector(`.${Window.REFERENCE.HTML_CLASS_NAME.CONTENTS}`);
+
     // create the window’s contents element, if necessary
     if (this.contentsElement === null) {
       this.contentsElement = document.createElement('div');
       this.contentsElement.classList.add(Window.REFERENCE.HTML_CLASS_NAME.CONTENTS);
       this.contentsElement.classList.add(Window.REFERENCE.HTML_CLASS_NAME.VISIBLE);
+
       // add the contents element to the component
       this.element.appendChild(this.contentsElement);
     }
 
-    // add the component to the DOM
+    // set the contents element’s dimensions, if necessary
+    if (this.size.height !== null) {
+      this.contentsElement.style.height = `${this.size.height}vh`;
+    }
+    if (this.size.width !== null) {
+      this.contentsElement.style.width = `${this.size.width}vw`;
+    }
+
+    // add the component to the document
     document.body.appendChild(this.element);
 
-    // HACK: allow all CSS transitions to fire correctly by calling JSON.stringify() on the element’s style
-    // TODO: Decrease heft
+    // compute the component element’s style – this materializes values at a baseline value, allowing CSS transitions to fire correctly
+    // TODO: Analyze performance hit / potential optimizations
     JSON.stringify( window.getComputedStyle(this.element) );
   }
 
-  _renderContents(html) {
-    this.logDebug(`${Window.prototype._renderContents.name} → html: ${core.utilities.isNonEmptyString(html) ? `${core.utilities.formatNumber(html.length)} ${core.utilities.pluralize('byte', html.length)}` : '[invalid]'}`);
-
-    // retrieve the table element’s markup from the server, and insert it into the table container element
-    core.webUtilities.injectHTML({
-      'debug': this.debug,
-      'html': html,
-      'replace': true,
-      'target': this.contentsElement
+  async _renderContents(html) {
+    this.logDebug({
+      _functionName: Window.prototype._renderContents.name,
+      htmlByteCount: (typeof html === 'string') ? html.length : 0
     });
 
-    // event callback: “contentsRender”
+    // insert the window contents’ HTML into the window contents element
+    core.webUtilities.injectHTML({
+      debug: this.debug,
+      html: html,
+      logger: this.logger,
+      replace: true,
+      sourceID: this._getLoggingSourceID({ functionName: Window.prototype._renderContents.name }),
+      target: this.contentsElement
+    });
+
+    // event callback: `contentsRender`
     if (this._eventCallbackContentsRender !== null) {
-      this._eventCallbackContentsRender();
+      await this._eventCallbackContentsRender(html);
     }
   }
 
+  /**
+   * Closes the window.
+   */
   async close() {
-    this.logDebug(`${Window.prototype.close.name}`);
+    this.logDebug({
+      _functionName: Window.prototype.close.name
+    });
 
     if (!this.opened) {
       this.logWarning('Window is already closed.');
@@ -431,13 +607,14 @@ class Window extends ModalLandscapeComponent {
       return;
     }
 
+    // indicate that window is closed
     this.opened = false;
     this.element.setAttribute(Window.REFERENCE.DATA_ATTRIBUTE_NAME.OPENED, 'false');
 
     // remove the window’s input focus
     this.element.blur();
 
-    // visually indicate that the window is closing
+    // visually indicate that the window is closed
     this.closeButtonElement.classList.add(Window.REFERENCE.HTML_CLASS_NAME.ACTIVE);
 
     // trigger the hide animation
@@ -447,27 +624,37 @@ class Window extends ModalLandscapeComponent {
     await this._unrenderModalOverlay();
 
     // after the hide animation completes, …
-    await this._delay(Window.REFERENCE.CSS_TRANSITION_DURATION.WINDOW);
-    // … remove the window
+    await core.utilities.delay(Window.REFERENCE.CSS_TRANSITION_DURATION.WINDOW);
+    // … remove the window from the document
     this.destroy();
   }
 
+  /**
+   * Loads the contents of the window.
+   */
   async load() {
-    this.logDebug(`${Window.prototype.load.name}`);
+    this.logDebug({
+      _functionName: Window.prototype.load.name
+    });
 
+    /**
+     * The window contents’ data
+     */
     const data = await this.dataSource.fetch();
 
-    // event callback: “dataSourceFetch”
+    // event callback: `dataSourceFetch`
     if (this._eventCallbackDataSourceFetch !== null) {
-      this._eventCallbackDataSourceFetch(data.text);
+      await this._eventCallbackDataSourceFetch(data);
     }
-
-    // open the window
-    this.open();
   }
 
+  /**
+   * Minimizes the window.
+   */
   async minimize() {
-    this.logDebug(`${Window.prototype.minimize.name}`);
+    this.logDebug({
+      _functionName: Window.prototype.minimize.name
+    });
 
     if (this.minimized) {
       this.logWarning('Window is already minimized.');
@@ -475,28 +662,34 @@ class Window extends ModalLandscapeComponent {
       return;
     }
 
+    // indicate that window is minimized
     this.minimized = true;
     this.element.setAttribute(Window.REFERENCE.DATA_ATTRIBUTE_NAME.MINIMIZED, 'true');
 
     // remove the window’s input focus
     this.element.blur();
 
-    // visually indicate that the window is minimizing
+    // visually indicate that the window is minimized
     this.minimizeButtonElement.classList.add(Window.REFERENCE.HTML_CLASS_NAME.ACTIVE);
 
     // minimize the window
     this.element.classList.add(Window.REFERENCE.HTML_CLASS_NAME.MINIMIZED);
 
     // remove the window’s contents from the render path
-    await this._delay(Window.REFERENCE.CSS_TRANSITION_DURATION.WINDOW_CONTENTS);
+    await core.utilities.delay(Window.REFERENCE.CSS_TRANSITION_DURATION.WINDOW_CONTENTS);
     this.contentsElement.classList.remove(Window.REFERENCE.HTML_CLASS_NAME.VISIBLE);
 
     // remove the modal overlay
     await this._unrenderModalOverlay();
   }
 
+  /**
+   * Opens the window.
+   */
   open() {
-    this.logDebug(`${Window.prototype.open.name}`);
+    this.logDebug({
+      _functionName: Window.prototype.open.name
+    });
 
     if (this.opened) {
       this.logWarning('Window is already open.');
@@ -504,6 +697,7 @@ class Window extends ModalLandscapeComponent {
       return;
     }
 
+    // indicate that window is opened
     this.opened = true;
     this.element.setAttribute(Window.REFERENCE.DATA_ATTRIBUTE_NAME.OPENED, 'true');
 
@@ -516,8 +710,12 @@ class Window extends ModalLandscapeComponent {
     // render a modal overlay
     this._renderModalOverlay();
 
-    // center the window in the viewport
+    /**
+     * The coordinates that center the window in the viewport
+     */
     const defaultCoordinates = this._getCenteredCoordinates();
+
+    // center the window in the viewport
     this.setPosition(defaultCoordinates);
 
     // display the window
@@ -527,8 +725,13 @@ class Window extends ModalLandscapeComponent {
     this.element.focus();
   }
 
+  /**
+   * Unminimizes the window.
+   */
   unminimize() {
-    this.logDebug(`${Window.prototype.unminimize.name}`);
+    this.logDebug({
+      _functionName: Window.prototype.unminimize.name
+    });
 
     if (!this.minimized) {
       this.logWarning('Window is already unminimized.');
@@ -536,20 +739,21 @@ class Window extends ModalLandscapeComponent {
       return;
     }
 
+    // indicate that window is unminimized
     this.minimized = false;
     this.element.setAttribute(Window.REFERENCE.DATA_ATTRIBUTE_NAME.MINIMIZED, 'false');
 
     // render a modal overlay
     this._renderModalOverlay();
 
-    // visually indicate that the window is unminimizing
+    // visually indicate that the window is unminimized
     this.minimizeButtonElement.classList.remove(Window.REFERENCE.HTML_CLASS_NAME.ACTIVE);
 
     // add the window’s contents to the render path
     this.contentsElement.classList.add(Window.REFERENCE.HTML_CLASS_NAME.VISIBLE);
 
-    // HACK: allow all CSS transitions to fire correctly by calling JSON.stringify() on the contents element’s style
-    // TODO: Decrease heft
+    // compute the window’s contents element’s style – this materializes values at a baseline value, allowing CSS transitions to fire correctly
+    // TODO: Analyze performance hit / potential optimizations
     JSON.stringify( window.getComputedStyle(this.contentsElement) );
 
     // unminimize the window

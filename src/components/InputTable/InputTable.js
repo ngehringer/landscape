@@ -1,8 +1,11 @@
-import * as core from '@backwater-systems/core';
 import * as dataSources from '../../dataSources/index.js';
 import Table from '../Table/Table.js';
 
 
+/**
+ * A table for data input.
+ * @extends Table
+ */
 class InputTable extends Table {
   static get CLASS_NAME() { return `@backwater-systems/landscape.components.${InputTable.name}`; }
 
@@ -13,6 +16,7 @@ class InputTable extends Table {
   }
 
   static get REFERENCE() {
+    /** The HTML class name of the component */
     const HTML_CLASS_NAME = `Landscape-${InputTable.name}`;
 
     return Object.freeze({
@@ -56,58 +60,67 @@ class InputTable extends Table {
     targetHTMLID
   }) {
     super({
-      'debug': debug,
-      'targetElement': targetElement,
-      'targetHTMLID': targetHTMLID
+      debug: debug,
+      targetElement: targetElement,
+      targetHTMLID: targetHTMLID
     });
 
     try {
       this.columnOptionsFlyoutPanelList = [];
 
-      this._eventCallbackDataSourceFetch = core.utilities.validateType(dataSourceFetchEvent, Function)
+      /**
+       * An event callback that fires after the table’s `DataSource` emits a `fetch` event
+       */
+      this._eventCallbackDataSourceFetch = (typeof dataSourceFetchEvent === 'function')
         ? dataSourceFetchEvent
         : null
       ;
 
-      this._eventCallbackTableRender = core.utilities.validateType(tableRenderEvent, Function)
-        ? tableRenderEvent
+      /**
+       * An event callback that fires after the table’s contents are rendered
+       */
+      this._eventCallbackTableRender = (typeof tableRenderEvent === 'function')
+        ? tableRenderEvent.bind(this)
         : null
       ;
 
-      // define the table’s data source
-      this.dataSource = core.utilities.validateType(dataSource, dataSources.BaseDataSource)
+      /**
+       * The `DataSource` that provides the input table’s data
+       */
+      this.dataSource = (
+        (typeof dataSource === 'object')
+        && (dataSource instanceof dataSources.BaseDataSource)
+      )
         ? dataSource
         : null
       ;
       if (this.dataSource !== null) {
-        // render the table on its data source’s “fetch” event
+        // render the table on its `DataSource`’s `fetch` event
         this.dataSource.registerEventHandler(
           'fetch',
-          (data) => { this._renderTable(data); }
+          async (data) => { await this._renderTable(data); }
         );
 
-        // define the data source’s “fetchError” event handler
+        // register the `DataSource`’s `fetchError` event handler
         this.dataSource.registerEventHandler(
           'fetchError',
           (error) => { this.logError(error); }
         );
       }
 
+      // initialize the component
       this._initialize();
 
       // load the table’s data (asynchronously)
-      // HACK
       setTimeout(
-        (
-          async () => {
-            try {
-              await this.load();
-            }
-            catch (error) {
-              this.logError(error);
-            }
+        async () => {
+          try {
+            await this.load();
           }
-        ).bind(this),
+          catch (error) {
+            this.logError(error);
+          }
+        },
         0
       );
     }
@@ -122,17 +135,21 @@ class InputTable extends Table {
     // apply the component’s CSS class
     this.element.classList.add(InputTable.REFERENCE.HTML_CLASS_NAME._);
 
+    /**
+     * The table container `Element`
+     */
     this.tableContainerElement = this.element.querySelector(`.${InputTable.REFERENCE.HTML_CLASS_NAME.TABLE_CONTAINER}`);
+
     // create the table container element, if necessary
     if (this.tableContainerElement === null) {
       this.tableContainerElement = document.createElement('div');
       this.tableContainerElement.classList.add(InputTable.REFERENCE.HTML_CLASS_NAME.TABLE_CONTAINER);
-      // add the table container to the DOM
+      // add the table container to the document
       this.element.appendChild(this.tableContainerElement);
     }
   }
 
-  _renderTable(data) {
+  async _renderTable(data) {
     // render the table with HTML generated from JSON data
     this._renderTableJSON(data.json);
 
@@ -140,17 +157,19 @@ class InputTable extends Table {
     this._renderTablePaginationControls();
     this._renderTableColumnControls();
 
-    // event callback: “tableRender”
+    // event callback: `tableRender`
     if (this._eventCallbackTableRender !== null) {
-      this._eventCallbackTableRender(this.tableContainerElement);
+      await this._eventCallbackTableRender(this.tableContainerElement);
     }
   }
 
   _renderTableJSON(data) {
-    this.logDebug(`${Table.prototype._renderTableJSON.name}`);
+    this.logDebug({
+      _functionName: Table.prototype._renderTableJSON.name,
+      data: data
+    });
 
     // TODO: Implement
-    console.log(data);
   }
 
   _renderTablePaginationControls() {
@@ -159,29 +178,18 @@ class InputTable extends Table {
 
   /**
    * Renders the global table controls: global filter, and reload button.
-   * @return {void}
    */
   _renderRowControls() {
-    this.logDebug(`${Table.prototype._renderTablePrimaryControls.name}`);
+    this.logDebug({
+      _functionName: Table.prototype._renderTablePrimaryControls.name
+    });
 
-    // create a row controls button
-    this.rowControlsButtonElement = document.createElement('button');
-    this.rowControlsButtonElement.classList.add(InputTable.REFERENCE.HTML_CLASS_NAME.ROW_CONTROLS_BUTTON);
-    this.rowControlsButtonElement.textContent = Table.REFERENCE.SYMBOLS.REFRESH;
-    this.rowControlsButtonElement.title = 'Refresh the table contents.';
-    this.element.appendChild(this.rowControlsButtonElement);
-
-    this.rowControlsButtonElement.addEventListener(
-      'click',
-      async (event) => {
-        try {
-          await this.load();
-        }
-        catch (error) {
-          this.logError(error);
-        }
-      }
-    );
+    /**
+     * The table row controls `Element`
+     */
+    this.tableRowControlsElement = document.createElement('div');
+    this.tableRowControlsElement.classList.add(InputTable.REFERENCE.HTML_CLASS_NAME.TABLE_ROW_CONTROLS);
+    this.element.appendChild(this.tableRowControlsElement);
   }
 }
 

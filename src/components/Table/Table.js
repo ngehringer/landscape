@@ -1,9 +1,14 @@
 import * as core from '@backwater-systems/core';
+
 import * as dataSources from '../../dataSources/index.js';
 import FlyoutPanel from '../FlyoutPanel/FlyoutPanel.js';
 import LandscapeComponent from '../LandscapeComponent.js';
 
 
+/**
+ * A sortable, filterable table.
+ * @extends LandscapeComponent
+ */
 class Table extends LandscapeComponent {
   static get CLASS_NAME() { return `@backwater-systems/landscape.components.${Table.name}`; }
 
@@ -15,6 +20,7 @@ class Table extends LandscapeComponent {
   }
 
   static get REFERENCE() {
+    /** The HTML class name of the component */
     const HTML_CLASS_NAME = `Landscape-${Table.name}`;
 
     return Object.freeze({
@@ -59,64 +65,75 @@ class Table extends LandscapeComponent {
     targetHTMLID
   }) {
     super({
-      'debug': debug,
-      'targetElement': targetElement,
-      'targetHTMLID': targetHTMLID
+      debug: debug,
+      targetElement: targetElement,
+      targetHTMLID: targetHTMLID
     });
 
     try {
       this.columnOptionsFlyoutPanelList = [];
 
-      this._eventCallbackDataSourceFetch = core.utilities.validateType(dataSourceFetchEvent, Function)
+      /**
+       * An event callback that fires after the table’s `DataSource` emits a `fetch` event
+       */
+      this._eventCallbackDataSourceFetch = (typeof dataSourceFetchEvent === 'function')
         ? dataSourceFetchEvent
         : null
       ;
 
-      this._eventCallbackTableRender = core.utilities.validateType(tableRenderEvent, Function)
-        ? tableRenderEvent
+      /**
+       * An event callback that fires after the table’s contents are rendered
+       */
+      this._eventCallbackTableRender = (typeof tableRenderEvent === 'function')
+        ? tableRenderEvent.bind(this)
         : null
       ;
 
-      // define whether the table’s contents will be rendered with pre-generated HTML
-      this.serverSideRendering = core.utilities.validateType(serverSideRendering, Boolean)
+      /**
+       * Whether the table’s contents will be rendered with pre-generated HTML
+       */
+      this.serverSideRendering = (typeof serverSideRendering === 'boolean')
         ? serverSideRendering
         : Table.DEFAULTS.SERVER_SIDE_RENDERING
       ;
 
-      // define the table’s data source
-      this.dataSource = core.utilities.validateType(dataSource, dataSources.BaseDataSource)
+      /**
+       * The `DataSource` that provides the table’s data
+       */
+      this.dataSource = (
+        (typeof dataSource === 'object')
+        && (dataSource instanceof dataSources.BaseDataSource)
+      )
         ? dataSource
         : null
       ;
       if (this.dataSource !== null) {
-        // render the table on its data source’s “fetch” event
+        // render the table on its `DataSource`’s `fetch` event
         this.dataSource.registerEventHandler(
           'fetch',
-          (data) => { this._renderTable(data); }
+          async (data) => { await this._renderTable(data); }
         );
 
-        // define the data source’s “fetchError” event handler
+        // register the `DataSource`’s `fetchError` event handler
         this.dataSource.registerEventHandler(
           'fetchError',
           (error) => { this.logError(error); }
         );
       }
 
+      // initialize the component
       this._initialize();
 
       // load the table’s data (asynchronously)
-      // HACK
       setTimeout(
-        (
-          async () => {
-            try {
-              await this.load();
-            }
-            catch (error) {
-              this.logError(error);
-            }
+        async () => {
+          try {
+            await this.load();
           }
-        ).bind(this),
+          catch (error) {
+            this.logError(error);
+          }
+        },
         0
       );
     }
@@ -128,13 +145,18 @@ class Table extends LandscapeComponent {
   }
 
   async load() {
-    this.logDebug(`${Table.prototype.load.name}`);
+    this.logDebug({
+      _functionName: Table.prototype.load.name
+    });
 
+    /**
+     * The table contents’ data
+     */
     const data = await this.dataSource.fetch();
 
-    // event callback: “dataSourceFetch”
+    // event callback: `dataSourceFetch`
     if (this._eventCallbackDataSourceFetch !== null) {
-      this._eventCallbackDataSourceFetch(data);
+      await this._eventCallbackDataSourceFetch(data);
     }
   }
 
@@ -142,17 +164,22 @@ class Table extends LandscapeComponent {
     // apply the component’s CSS class
     this.element.classList.add(Table.REFERENCE.HTML_CLASS_NAME._);
 
+    /**
+     * The table container `Element`
+     */
     this.tableContainerElement = this.element.querySelector(`.${Table.REFERENCE.HTML_CLASS_NAME.TABLE_CONTAINER}`);
+
     // create the table container element, if necessary
     if (this.tableContainerElement === null) {
       this.tableContainerElement = document.createElement('div');
       this.tableContainerElement.classList.add(Table.REFERENCE.HTML_CLASS_NAME.TABLE_CONTAINER);
-      // add the table container to the DOM
+
+      // add the table container to the document
       this.element.appendChild(this.tableContainerElement);
     }
   }
 
-  _renderTable(data) {
+  async _renderTable(data) {
     if (this.serverSideRendering) {
       // render the table with pre-generated HTML
       this._renderTableHTML(data.text);
@@ -166,9 +193,9 @@ class Table extends LandscapeComponent {
     this._renderTablePaginationControls();
     this._renderTableColumnControls();
 
-    // event callback: “tableRender”
+    // event callback: `tableRender`
     if (this._eventCallbackTableRender !== null) {
-      this._eventCallbackTableRender(this.tableContainerElement);
+      await this._eventCallbackTableRender(this.tableContainerElement);
     }
   }
 
@@ -180,9 +207,9 @@ class Table extends LandscapeComponent {
 
       const columnID = tableHeaderCellElement.getAttribute(Table.REFERENCE.DATA_ATTRIBUTE_NAME.COLUMN_ID);
 
-      // ensure the associated column can be determined
-      if ( !core.utilities.isNonEmptyString(columnID) ) {
-        this.logWarning(`Column ${core.utilities.formatNumber(tableHeaderCellElementIndex + 1)} does not specify a valid “${Table.REFERENCE.DATA_ATTRIBUTE_NAME.COLUMN_ID}” attribute value.`);
+      // abort if the associated column cannot be determined
+      if ( !core.utilities.validation.isNonEmptyString(columnID) ) {
+        this.logWarning(`Column ${core.utilities.formatting.formatNumber(tableHeaderCellElementIndex + 1)} does not specify a valid “${Table.REFERENCE.DATA_ATTRIBUTE_NAME.COLUMN_ID}” attribute value.`);
 
         return;
       }
@@ -323,8 +350,8 @@ class Table extends LandscapeComponent {
       flexColumnContainerElement.appendChild(columnOptionsFlyoutPanelElement);
 
       const columnOptionsFlyoutPanel = new FlyoutPanel({
-        'debug': this.debug,
-        'targetElement': columnOptionsFlyoutPanelElement
+        debug: this.debug,
+        targetElement: columnOptionsFlyoutPanelElement
       });
       this.columnOptionsFlyoutPanelList.push({
         [columnName]: columnOptionsFlyoutPanel
@@ -335,22 +362,31 @@ class Table extends LandscapeComponent {
   }
 
   _renderTableHTML(html) {
-    this.logDebug(`${Table.prototype._renderTableHTML.name} → html: ${core.utilities.isNonEmptyString(html) ? `${core.utilities.formatNumber(html.length)} ${core.utilities.pluralize('byte', html.length)}` : '[invalid]'}`);
+    this.logDebug({
+      _functionName: Table.prototype._renderTableHTML.name,
+      htmlByteCount: core.utilities.validation.isNonEmptyString(html)
+        ? html.length
+        : 0
+    });
 
-    // insert the fetched markup into the table container element
+    // insert the table contents’ HTML into the table container element
     core.webUtilities.injectHTML({
-      'debug': this.debug,
-      'html': html,
-      'replace': true,
-      'target': this.tableContainerElement
+      debug: this.debug,
+      html: html,
+      logger: this.logger,
+      replace: true,
+      sourceID: this._getLoggingSourceID({ functionName: Table.prototype._renderTableHTML.name }),
+      target: this.tableContainerElement
     });
   }
 
   _renderTableJSON(data) {
-    this.logDebug(`${Table.prototype._renderTableJSON.name}`);
+    this.logDebug({
+      _functionName: Table.prototype._renderTableJSON.name,
+      data: data
+    });
 
     // TODO: Implement
-    console.log(data);
   }
 
   _renderTablePaginationControls() {
@@ -359,21 +395,24 @@ class Table extends LandscapeComponent {
 
   /**
    * Renders the global table controls: global filter, and reload button.
-   * @return {void}
    */
   _renderTablePrimaryControls() {
-    this.logDebug(`${Table.prototype._renderTablePrimaryControls.name}`);
+    this.logDebug({
+      _functionName: Table.prototype._renderTablePrimaryControls.name
+    });
 
-    // create a table refresh button
-    this.rowControlsButtonElement = document.createElement('div');
-    this.rowControlsButtonElement.classList.add(Table.REFERENCE.HTML_CLASS_NAME.REFRESH_BUTTON);
-    this.rowControlsButtonElement.textContent = Table.REFERENCE.SYMBOLS.REFRESH;
-    this.rowControlsButtonElement.title = 'Refresh the table contents.';
-    this.element.appendChild(this.rowControlsButtonElement);
+    /**
+     * The table refresh button `Element`
+     */
+    this.tableRefreshButtonElement = document.createElement('div');
+    this.tableRefreshButtonElement.classList.add(Table.REFERENCE.HTML_CLASS_NAME.REFRESH_BUTTON);
+    this.tableRefreshButtonElement.textContent = Table.REFERENCE.SYMBOLS.REFRESH;
+    this.tableRefreshButtonElement.title = 'Refresh the table contents.';
+    this.element.appendChild(this.tableRefreshButtonElement);
 
-    this.rowControlsButtonElement.addEventListener(
+    this.tableRefreshButtonElement.addEventListener(
       'click',
-      async (event) => {
+      async () => {
         try {
           await this.load();
         }

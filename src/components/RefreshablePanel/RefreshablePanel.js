@@ -1,8 +1,11 @@
 import * as core from '@backwater-systems/core';
+
 import * as dataSources from '../../dataSources/index.js';
 import LandscapeComponent from '../LandscapeComponent.js';
 
-
+/**
+ * A panel with contents that can be refreshed by fetching from a `DataSource`.
+ */
 class RefreshablePanel extends LandscapeComponent {
   static get CLASS_NAME() { return `@backwater-systems/landscape.components.${RefreshablePanel.name}`; }
 
@@ -13,6 +16,7 @@ class RefreshablePanel extends LandscapeComponent {
   }
 
   static get REFERENCE() {
+    /** The HTML class name of the component */
     const HTML_CLASS_NAME = `Landscape-${RefreshablePanel.name}`;
 
     return Object.freeze({
@@ -30,56 +34,56 @@ class RefreshablePanel extends LandscapeComponent {
   }
 
   constructor({
+    contentsRenderEvent = null,
     dataSource,
     debug = RefreshablePanel.DEFAULTS.DEBUG,
-    contentsRenderEvent = null,
     targetElement,
     targetHTMLID
   }) {
     super({
-      'debug': debug,
-      'targetElement': targetElement,
-      'targetHTMLID': targetHTMLID
+      debug: debug,
+      targetElement: targetElement,
+      targetHTMLID: targetHTMLID
     });
 
     try {
-      if ( !core.utilities.validateType(dataSource, dataSources.BaseDataSource) ) throw new core.errors.TypeValidationError('dataSource', dataSources.BaseDataSource);
+      if (
+        (typeof dataSource !== 'object')
+        || !(dataSource instanceof dataSources.BaseDataSource)
+      ) throw new core.errors.TypeValidationError('dataSource', dataSources.BaseDataSource);
 
       /**
        * An event callback that fires after the panel’s contents are rendered
-       * @type {(function|null)}
        */
-      this._eventCallbackContentsRender = core.utilities.validateType(contentsRenderEvent, Function)
-        ? contentsRenderEvent
+      this._eventCallbackContentsRender = (typeof contentsRenderEvent === 'function')
+        ? contentsRenderEvent.bind(this)
         : null
       ;
 
       /**
-       * Provides the contents of the panel
-       * @type {DataSource}
+       * The `DataSource` that provides the panel’s contents
        */
       this.dataSource = dataSource;
 
       /**
-       * Indicates whether the panel’s data source has an automatic fetch timer that can be started and stopped
-       * @type {boolean}
+       * Indicates whether the panel’s `DataSource` has an automatic fetch timer that can be started and stopped
        */
       this.timedDataSource = (this.dataSource instanceof dataSources.TimedAjaxDataSource);
 
-      // define the data source’s “fetch” event handler
+      // register the `DataSource`’s `fetch` event handler
       this.dataSource.registerEventHandler(
         'fetch',
         this._eventDataSourceFetch.bind(this)
       );
 
-      // define the data source’s “fetchError” event handler
+      // register the `DataSource`’s `fetchError` event handler
       this.dataSource.registerEventHandler(
         'fetchError',
         this._eventDataSourceFetchError.bind(this)
       );
 
       if (this.timedDataSource) {
-        // define the data source’s “startTimer” event handler
+        // register the `DataSource`’s `startTimer` event handler
         this.dataSource.registerEventHandler(
           'startTimer',
           () => {
@@ -87,7 +91,7 @@ class RefreshablePanel extends LandscapeComponent {
           }
         );
 
-        // define the data source’s “stopTimer” event handler
+        // register the `DataSource`’s `stopTimer` event handler
         this.dataSource.registerEventHandler(
           'stopTimer',
           () => {
@@ -96,21 +100,19 @@ class RefreshablePanel extends LandscapeComponent {
         );
       }
 
+      // initialize the component
       this._initialize();
 
       // load the panel’s contents (asynchronously)
-      // HACK
       setTimeout(
-        (
-          async () => {
-            try {
-              await this.refresh();
-            }
-            catch (error) {
-              this.logError(error);
-            }
+        async () => {
+          try {
+            await this.refresh();
           }
-        ).bind(this),
+          catch (error) {
+            this.logError(error);
+          }
+        },
         0
       );
     }
@@ -121,23 +123,36 @@ class RefreshablePanel extends LandscapeComponent {
     }
   }
 
+  /**
+   * Refreshes the contents of the panel by fetching the component’s `DataSource`.
+   */
   async refresh() {
-    this.logDebug(`${RefreshablePanel.prototype.refresh.name}`);
+    this.logDebug({
+      _functionName: RefreshablePanel.prototype.refresh.name
+    });
 
     await this.dataSource.fetch();
   }
 
-  _eventDataSourceFetch(data) {
-    this.logDebug(`${RefreshablePanel.prototype._eventDataSourceFetch.name}`);
+  async _eventDataSourceFetch(data) {
+    this.logDebug({
+      _functionName: RefreshablePanel.prototype._eventDataSourceFetch.name,
+      data: data
+    });
 
-    if ( !core.utilities.validateType(data, Object) ) throw new core.errors.TypeValidationError('data', Object);
-    if ( !core.utilities.isNonEmptyString(data.text) ) throw new core.errors.TypeValidationError('data.text', String);
+    if (
+      (typeof data !== 'string')
+      || !core.utilities.validation.isNonEmptyString(data)
+    ) throw new core.errors.TypeValidationError('data', String);
 
-    this._renderContents(data.text);
+    await this._renderContents(data);
   }
 
   _eventDataSourceFetchError(error) {
-    this.logDebug(`${RefreshablePanel.prototype._eventDataSourceFetchError.name}`);
+    this.logDebug({
+      _functionName: RefreshablePanel.prototype._eventDataSourceFetchError.name,
+      error: error
+    });
 
     // log the error
     this.logError(error);
@@ -145,9 +160,12 @@ class RefreshablePanel extends LandscapeComponent {
 
   async _eventIndicatorClick(event) {
     try {
-      this.logDebug(`${RefreshablePanel.prototype._eventIndicatorClick.name}`);
+      this.logDebug({
+        _functionName: RefreshablePanel.prototype._eventIndicatorClick.name,
+        event: event
+      });
 
-      // for a timed data source …
+      // for a timed `DataSource` …
       if (this.timedDataSource) {
         // … if its timer is started …
         if (this.dataSource.timerStarted) {
@@ -163,7 +181,7 @@ class RefreshablePanel extends LandscapeComponent {
           await this.dataSource.startTimer();
         }
       }
-      // … otherwise, for a non-timed data source …
+      // … otherwise, for a non-timed `DataSource` …
       else {
         // … refresh the panel’s contents
         await this.refresh();
@@ -178,10 +196,12 @@ class RefreshablePanel extends LandscapeComponent {
     // apply the component’s CSS class
     this.element.classList.add(RefreshablePanel.REFERENCE.HTML_CLASS_NAME._);
 
-    // create an indicator to display the component’s status
+    /**
+     * The panel status indicator `Element`
+     */
     this.indicatorElement = document.createElement('div');
     this.indicatorElement.classList.add(RefreshablePanel.REFERENCE.HTML_CLASS_NAME.INDICATOR);
-    // timed data source …
+    // timed `DataSource` …
     if (this.timedDataSource) {
       // … with a started timer
       if (this.dataSource.timerStarted) {
@@ -192,20 +212,23 @@ class RefreshablePanel extends LandscapeComponent {
         this._renderIndicator(RefreshablePanel.REFERENCE.SYMBOLS.STOPPED);
       }
     }
-    // … otherwise, non-timed data source
+    // … otherwise, non-timed `DataSource`
     else {
       this._renderIndicator(RefreshablePanel.REFERENCE.SYMBOLS.REFRESH);
     }
     this.element.appendChild(this.indicatorElement);
 
-    // handle the indicator’s “click” event
+    // handle the indicator’s `click` event
     this.indicatorElement.addEventListener(
       'click',
       this._eventIndicatorClick.bind(this)
     );
 
-    // attempt to retrieve an existing contents element
+    /**
+     * The panel contents `Element`
+     */
     this.contentsElement = this.element.querySelector(`.${RefreshablePanel.REFERENCE.HTML_CLASS_NAME.CONTENTS}`);
+
     // create the contents element, if it doesn’t already exist
     if (this.contentsElement === null) {
       this.contentsElement = document.createElement('div');
@@ -214,33 +237,42 @@ class RefreshablePanel extends LandscapeComponent {
     }
   }
 
-  _renderContents(html) {
-    this.logDebug(`${RefreshablePanel.prototype._renderContents.name} → html: ${core.utilities.isNonEmptyString(html) ? `${core.utilities.formatNumber(html.length)} ${core.utilities.pluralize('byte', html.length)}` : '[invalid]'}`);
-
-    core.webUtilities.injectHTML({
-      'debug': this.debug,
-      'html': html,
-      'replace': true,
-      'target': this.contentsElement
+  async _renderContents(html) {
+    this.logDebug({
+      _functionName: RefreshablePanel.prototype._renderContents.name,
+      htmlByteCount: core.utilities.validation.isNonEmptyString(html) ? html.length : 0
     });
 
-    // event callback: “contentsRender”
+    // insert the panel contents’ HTML into the panel contents element
+    core.webUtilities.injectHTML({
+      debug: this.debug,
+      html: html,
+      logger: this.logger,
+      replace: true,
+      sourceID: this._getLoggingSourceID({ functionName: RefreshablePanel.prototype._renderContents.name }),
+      target: this.contentsElement
+    });
+
+    // event callback: `contentsRender`
     if (this._eventCallbackContentsRender !== null) {
-      this._eventCallbackContentsRender();
+      await this._eventCallbackContentsRender(html);
     }
   }
 
   _renderIndicator(mode) {
-    this.logDebug(`${RefreshablePanel.prototype._renderIndicator.name} → mode: “${mode}”`);
+    this.logDebug({
+      _functionName: RefreshablePanel.prototype._renderIndicator.name,
+      mode: mode
+    });
 
     if (mode === RefreshablePanel.REFERENCE.SYMBOLS.REFRESH) {
       this.indicatorElement.textContent = RefreshablePanel.REFERENCE.SYMBOLS.REFRESH;
       this.indicatorElement.title = 'Refresh the contents.';
     }
     else if (mode === RefreshablePanel.REFERENCE.SYMBOLS.STARTED) {
-      // visually indicate that the component is automatically refreshing the contents
+      // visually indicate that the component is automatically refreshing its contents
       this.indicatorElement.textContent = RefreshablePanel.REFERENCE.SYMBOLS.STARTED;
-      this.indicatorElement.title = `Contents are automatically refreshing every ${core.utilities.formatNumber(this.dataSource.frequency)} ${core.utilities.pluralize('second', this.dataSource.frequency)}.`;
+      this.indicatorElement.title = `Contents are automatically refreshing every ${core.utilities.formatting.formatNumber(this.dataSource.frequency)} ${core.utilities.formatting.pluralize('second', this.dataSource.frequency)}.`;
     }
     else if (mode === RefreshablePanel.REFERENCE.SYMBOLS.STOPPED) {
       // visually indicate that the component is not automatically refreshing its contents

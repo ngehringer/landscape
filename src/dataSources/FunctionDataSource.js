@@ -1,12 +1,11 @@
 import * as core from '@backwater-systems/core';
+
 import BaseDataSource from './BaseDataSource.js';
 
 
 /**
- * A data source utilizing a JavaScript function that returns a string as its provider
+ * A `DataSource` that provides data via executing a JavaScript function.
  * @extends BaseDataSource
- * @param {Function} dataFunction The data provider function
- * @param {boolean} [debug=false] Debug mode is enabled
  */
 class FunctionDataSource extends BaseDataSource {
   static get CLASS_NAME() { return `@backwater-systems/landscape.dataSources.${FunctionDataSource.name}`; }
@@ -22,20 +21,22 @@ class FunctionDataSource extends BaseDataSource {
     debug = FunctionDataSource.DEFAULTS.DEBUG
   }) {
     super({
-      'debug': debug
+      debug: debug
     });
 
-    if ( !core.utilities.validateType(dataFunction, Function) ) throw new core.errors.TypeValidationError('dataFunction', Function);
+    // abort if the specified `dataFunction` parameter value is not a function
+    if (typeof dataFunction !== 'function') throw new core.errors.TypeValidationError('dataFunction', Function);
 
     /**
-     * A reference to the data function
-     * @type {Function}
-     * @private
+     * The function that provides the data
      */
     this.dataFunction = dataFunction;
   }
 
-  async fetchCore() {
+  /**
+   * Returns the result of executing the `FunctionDataSource.dataFunction()` function.
+   */
+  fetchCore() {
     return this.dataFunction();
   }
 }

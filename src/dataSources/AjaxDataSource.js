@@ -1,13 +1,11 @@
 import * as core from '@backwater-systems/core';
+
 import BaseDataSource from './BaseDataSource.js';
 
 
 /**
- * Provides data that is retrieved via Ajax calls
+ * A `DataSource` that provides data retrieved via Ajax.
  * @extends BaseDataSource
- * @param {boolean} [debug=false] Debug mode is enabled
- * @param {Object} [parameters] Request parameters used for retrieving data
- * @param {string} url URL from which the data is retrieved
  */
 class AjaxDataSource extends BaseDataSource {
   static get CLASS_NAME() { return `@backwater-systems/landscape.dataSources.${AjaxDataSource.name}`; }
@@ -24,34 +22,39 @@ class AjaxDataSource extends BaseDataSource {
     url
   }) {
     super({
-      'debug': debug
+      debug: debug
     });
 
-    if ( !core.utilities.isNonEmptyString(url) ) throw new core.errors.TypeValidationError('url', String);
+    if (
+      (typeof url !== 'string')
+      || !core.utilities.validation.isNonEmptyString(url)
+    ) throw new core.errors.TypeValidationError('url', String);
 
     /**
-     * URL from which the data is retrieved
-     * @type {string}
-     * @private
+     * The HTTP request parameters for retrieving the data
      */
-    this.url = url;
-
-    /**
-     * Request parameters used for retrieving data
-     * @type {string}
-     * @private
-     */
-    this.parameters = core.utilities.isNonEmptyString(url)
+    this.parameters = (typeof parameters === 'object')
       ? parameters
       : null
     ;
+
+    /**
+     * The URL from which the data is retrieved
+     */
+    this.url = url;
   }
 
+  /**
+   * Returns the result of fetching the specified URL with an HTTP `GET` request.
+   */
   async fetchCore() {
+    /**
+     * The result of the HTTP `GET` request to the specified URL
+     */
     const data = await core.webUtilities.ajax.get({
-      'debug': this.debug,
-      'location': this.url,
-      'parameters': this.parameters
+      debug: this.debug,
+      location: this.url,
+      parameters: this.parameters
     });
 
     return data;

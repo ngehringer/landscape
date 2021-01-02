@@ -166,26 +166,24 @@
 }
 
 .Landscape-dark .Landscape-FlyoutPanel-switch {
-  background-color: rgba(40, 40, 40, 0.8);
+  background-color: rgba(40, 40, 40, 0.9);
 }
 
 .Landscape-dark .Landscape-FlyoutPanel-switch:hover {
-  background-color: rgba(20, 20, 20, 0.8);
-}
-
-
-/* .Landscape-ToastNotifier */
-
-.Landscape-dark .Landscape-ToastNotifier-close-button:active,
-.Landscape-dark .Landscape-ToastNotifier-close-button.Landscape-active {
-  background-color: rgba(20, 20, 20, 0.95);
-  color: rgb(100, 10, 120);
-  text-shadow: 0.02em 0.02em rgba(80, 80, 80, 0.5);
-}
-
-.Landscape-dark .Landscape-ToastNotifier-notification {
   background-color: rgba(30, 30, 30, 0.9);
-  color: rgb(150, 150, 150);
+}
+
+.Landscape-dark .Landscape-FlyoutPanel-switch:active,
+.Landscape-dark .Landscape-FlyoutPanel-switch.Landscape-active {
+  background-color: rgba(20, 20, 20, 0.9);
+}
+
+
+/* .Landscape-InputTable */
+
+.Landscape-dark .Landscape-InputTable input,
+.Landscape-dark .Landscape-InputTable select {
+  background-color: rgba(20, 20, 20, 0.95);
 }
 
 
@@ -272,6 +270,21 @@
 }
 
 
+/* .Landscape-ToastNotifier */
+
+.Landscape-dark .Landscape-ToastNotifier-close-button:active,
+.Landscape-dark .Landscape-ToastNotifier-close-button.Landscape-active {
+  background-color: rgba(20, 20, 20, 0.95);
+  color: rgb(100, 10, 120);
+  text-shadow: 0.02em 0.02em rgba(80, 80, 80, 0.5);
+}
+
+.Landscape-dark .Landscape-ToastNotifier-notification {
+  background-color: rgba(30, 30, 30, 0.9);
+  color: rgb(150, 150, 150);
+}
+
+
 /* .Landscape-Window */
 
 .Landscape-dark.Landscape-Window.Landscape-moving {
@@ -280,9 +293,13 @@
 
 .Landscape-dark .Landscape-Window-title-bar-button:active,
 .Landscape-dark .Landscape-Window-title-bar-button.Landscape-active {
-  background-color: rgba(20, 20, 20, 0.95);
+  background-color: rgba(150, 150, 150, 0.95);
   color: rgb(100, 10, 120);
   text-shadow: 0.02em 0.02em rgba(80, 80, 80, 0.5);
+}
+
+.Landscape-dark .Landscape-Window-contents {
+  background-color: rgba(30, 30, 30, 0.95);
 }
 
 .Landscape-dark .Landscape-Window:hover .Landscape-Window-status-indicator {
@@ -294,7 +311,7 @@
 }
 
 .Landscape-dark .Landscape-Window-title-bar {
-  background-color: rgba(30, 30, 30, 0.9);
+  background-color: rgba(60, 60, 60, 0.95);
   background-image: linear-gradient(
     rgba(8, 8, 8, 0.5),
     rgba(8, 8, 8, 0.25) 20%,

@@ -1,11 +1,12 @@
 .Landscape-FlyoutPanel {
   display: inline-block;
+  outline: none;
 }
 
 .Landscape-FlyoutPanel-contents {
-  position: fixed;
   background-color: rgba(240, 240, 240, 0.8);
   max-width: 100vw;
+  position: fixed;
 }
 
 .Landscape-FlyoutPanel-contents:not(.Landscape-visible) {
@@ -13,25 +14,25 @@
 }
 
 .Landscape-FlyoutPanel-switch {
-  display: inline-block;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 0.125vmin;
+  color: rgb(140, 140, 140);
   cursor: pointer;
+  display: inline-block;
+  font-size: 80%;
   outline: none;
   padding: 0.4em 0.8em;
-  border-radius: 0.125vmin;
-  background-color: rgba(255, 255, 255, 0.9);
-  color: rgb(140, 140, 140);
-  font-size: 80%;
   text-shadow: 0.04em 0.04em rgba(255, 255, 255, 0.5);
-  /* TODO: Remove vendor prefixes */
-  -moz-user-select: none;
-  -ms-user-select: none;
-  -webkit-user-select: none;
-  user-select: none;
   transition:
     background-color 0.2s,
     color 0.2s,
     transform 0.2s
   ;
+  user-select: none;
+  /* TODO: Remove vendor prefixes */
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-user-select: none;
 }
 
 .Landscape-FlyoutPanel-switch.Landscape-compact {
@@ -39,19 +40,19 @@
 }
 
 .Landscape-FlyoutPanel-switch:hover {
+  background-color: rgba(240, 240, 240, 0.9);
   transform: scale(1.125);
-  background-color: rgba(240, 240, 240, 0.95);
 }
 
 .Landscape-FlyoutPanel-switch:active,
 .Landscape-FlyoutPanel-switch.Landscape-active {
-  transform: scale(1.1);
-  background-color: rgba(236, 236, 236, 0.95);
+  background-color: rgba(236, 236, 236, 0.9);
   color: rgb(120, 120, 120);
+  transform: scale(1.1);
 }
 
 .Landscape-FlyoutPanel-switch-symbol {
+  font-size: 65%;
   padding-left: 0.4em;
   padding-right: 0.4em;
-  font-size: 65%;
 }

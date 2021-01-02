@@ -2,7 +2,7 @@ import BaseDataSource from './BaseDataSource.js';
 
 
 /**
- * A data source that provides null
+ * A `DataSource` that provides `null`.
  * @extends BaseDataSource
  */
 class NullDataSource extends BaseDataSource {
@@ -18,10 +18,13 @@ class NullDataSource extends BaseDataSource {
     debug = NullDataSource.DEFAULTS.DEBUG
   }) {
     super({
-      'debug': debug
+      debug: debug
     });
   }
 
+  /**
+   * Returns `null`.
+   */
   fetchCore() {
     return null;
   }

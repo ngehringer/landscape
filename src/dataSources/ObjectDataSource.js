@@ -1,12 +1,11 @@
 import * as core from '@backwater-systems/core';
+
 import BaseDataSource from './BaseDataSource.js';
 
 
 /**
- * A data source utilizing an in-memory JavaScript object as its store
+ * A `DataSource` that provides an encapsulated JavaScript object.
  * @extends BaseDataSource
- * @param {Object} dataObject The data object
- * @param {boolean} [debug=false] Debug mode is enabled
  */
 class ObjectDataSource extends BaseDataSource {
   static get CLASS_NAME() { return `@backwater-systems/landscape.dataSources.${ObjectDataSource.name}`; }
@@ -22,19 +21,24 @@ class ObjectDataSource extends BaseDataSource {
     debug = ObjectDataSource.DEFAULTS.DEBUG
   }) {
     super({
-      'debug': debug
+      debug: debug
     });
 
-    if ( !core.utilities.validateType(dataObject, Object) ) throw new core.errors.TypeValidationError('dataObject', Object);
+    // abort if the specified `dataObject` parameter value is not an object
+    if (
+      (typeof dataObject !== 'object')
+      || (dataObject === null)
+    ) throw new core.errors.TypeValidationError('dataObject', Object);
 
     /**
      * A cached reference to the data object
-     * @type {Object}
-     * @private
      */
     this.dataObject = dataObject;
   }
 
+  /**
+   * Returns the `ObjectDataSource.dataObject` object.
+   */
   fetchCore() {
     return this.dataObject;
   }
