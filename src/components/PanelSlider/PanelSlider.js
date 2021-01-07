@@ -140,8 +140,8 @@ class PanelSlider extends LandscapeComponent {
           async () => {
             try {
               /**
-                * The ID of the initial panel to display
-                */
+               * The ID of the initial panel to display
+               */
               const _initialPanelID = (this.initialPanelID === null)
                 // default: the first panel
                 ? this.panels[0].id
@@ -187,7 +187,11 @@ class PanelSlider extends LandscapeComponent {
     });
 
     // abort if a new panel is not being shown
-    if (panelID === this.currentPanelID) return;
+    if (panelID === this.currentPanelID) {
+      this.logWarning(`The current panel is already “${panelID}”.`);
+
+      return;
+    }
 
     /**
      * Metadata about the current panel (or null)
@@ -200,9 +204,6 @@ class PanelSlider extends LandscapeComponent {
     const panelMetadata = this._getPanelMetadata(panelID);
     if (panelMetadata === null) throw new Error(`Panel metadata (ID: “${panelID}”) could not be retrieved.`);
 
-    // update the current panel
-    this.currentPanelID = panelMetadata.id;
-
     // load the panel’s contents, if necessary
     if (
       this.asynchronousLoading
@@ -210,6 +211,9 @@ class PanelSlider extends LandscapeComponent {
     ) {
       await this._loadPanel(panelMetadata);
     }
+
+    // update the current panel
+    this.currentPanelID = panelMetadata.id;
 
     // show the panel / trigger the animations
     await this._executePanelAnimations(panelMetadata, currentPanelMetadata);
@@ -449,24 +453,26 @@ class PanelSlider extends LandscapeComponent {
     this._renderPanel(data, panelMetadata);
   }
 
-  _eventDataSourceFetchError(error) {
+  _eventDataSourceFetchError(error, panelMetadata) {
     this.logDebug({
       _functionName: PanelSlider.prototype._eventDataSourceFetchError.name,
-      error: error
+      error: error,
+      panelID: panelMetadata.id
     });
 
     // log the error
     this.logError(error);
   }
 
-  async _executePanelAnimations(panelMetadata, currentPanelMetadata) {
+  async _executePanelAnimations(newPanelMetadata, currentPanelMetadata) {
     /**
      * The ID of the current panel (or null)
      */
     const currentPanelID = currentPanelMetadata?.id ?? null;
 
-    if (panelMetadata.id === currentPanelID) {
-      this.logWarning(`Cannot execute animations; the current panel is already “${panelMetadata.id}”.`);
+    // abort if the new panel ID is the same as the current panel ID
+    if (newPanelMetadata.id === currentPanelID) {
+      this.logWarning(`Cannot execute animations; the current panel is already “${newPanelMetadata.id}”.`);
 
       return;
     }
@@ -484,7 +490,7 @@ class PanelSlider extends LandscapeComponent {
     /**
      * The zero-based index of the new panel’s position in the carousel
      */
-    const panelPositionIndex = this._getPanelPositionIndex(panelMetadata.id);
+    const newPanelPositionIndex = this._getPanelPositionIndex(newPanelMetadata.id);
 
     /**
      * The direction that the “animate in” animation should occur
@@ -508,12 +514,12 @@ class PanelSlider extends LandscapeComponent {
       animateInDirection = PanelSlider.REFERENCE.ANIMATE_DIRECTIONS.DOWN;
     }
     // slide ↓
-    else if (panelPositionIndex === 0) {
+    else if (newPanelPositionIndex === 0) {
       animateOutDirection = PanelSlider.REFERENCE.ANIMATE_DIRECTIONS.DOWN;
       animateInDirection = PanelSlider.REFERENCE.ANIMATE_DIRECTIONS.UP;
     }
     // slide ←
-    else if (panelPositionIndex > currentPanelPositionIndex) {
+    else if (newPanelPositionIndex > currentPanelPositionIndex) {
       animateOutDirection = PanelSlider.REFERENCE.ANIMATE_DIRECTIONS.LEFT;
       animateInDirection = PanelSlider.REFERENCE.ANIMATE_DIRECTIONS.RIGHT;
     }
@@ -529,8 +535,8 @@ class PanelSlider extends LandscapeComponent {
       animateOutDirection: animateOutDirection,
       currentPanelID: currentPanelID,
       currentPanelPositionIndex: currentPanelPositionIndex,
-      panelID: panelMetadata.id,
-      panelPositionIndex: panelPositionIndex
+      newPanelID: newPanelMetadata.id,
+      newPanelPositionIndex: newPanelPositionIndex
     });
 
     // execute the animations
@@ -540,7 +546,7 @@ class PanelSlider extends LandscapeComponent {
     ) {
       await this._animateOut(currentPanelMetadata, animateOutDirection);
     }
-    await this._animateIn(panelMetadata, animateInDirection);
+    await this._animateIn(newPanelMetadata, animateInDirection);
   }
 
   _getPanelMetadata(panelID) {
@@ -566,7 +572,7 @@ class PanelSlider extends LandscapeComponent {
   }
 
   _initialize() {
-    // attempt to populate the list of panels from the DOM
+    // if no panels were specified (or valid) via the constructor, attempt to populate the list of panels from the DOM
     if (this.panels.length === 0) {
       for (
         const panelElement of Array.from(
@@ -577,7 +583,7 @@ class PanelSlider extends LandscapeComponent {
          * The panel ID retrieved from the `Element` (`data-panel-id` attribute)
          */
         const panelID = panelElement.getAttribute(PanelSlider.REFERENCE.DATA_ATTRIBUTE_NAME.PANEL_ID);
-        if (panelID !== null) {
+        if ( core.utilities.validation.isNonEmptyString(panelID) ) {
           this.panels.push({
             dataSource: null,
             element: panelElement,
@@ -595,6 +601,8 @@ class PanelSlider extends LandscapeComponent {
 
     /**
      * The carousel `Element`
+     *
+     * It contains the panels.
      */
     let carouselElement = this.element.querySelector(`.${PanelSlider.REFERENCE.HTML_CLASS_NAME._}`);
 
@@ -621,7 +629,9 @@ class PanelSlider extends LandscapeComponent {
         // register the panel `DataSource`’s `fetchError` event handler
         panelMetadata.dataSource.registerEventHandler(
           'fetchError',
-          this._eventDataSourceFetchError.bind(this)
+          (error) => {
+            this._eventDataSourceFetchError(error, panelMetadata);
+          }
         );
       }
     }
@@ -634,7 +644,7 @@ class PanelSlider extends LandscapeComponent {
     });
 
     /**
-     * The panel `Element` (from the panel metadata)
+     * The existing panel `Element` (or null)
      */
     const _panelElement = panelMetadata.element;
 
@@ -658,7 +668,7 @@ class PanelSlider extends LandscapeComponent {
     }
 
     /**
-     * The panel `Element`
+     * The created panel `Element`
      */
     const panelElement = document.createElement('div');
     panelElement.classList.add(PanelSlider.REFERENCE.HTML_CLASS_NAME.PANEL);
@@ -669,7 +679,7 @@ class PanelSlider extends LandscapeComponent {
     }
 
     /**
-     * The panel contents container `Element` (queried from the DOM)
+     * The panel contents container `Element`
      */
     const _panelContentsContainerElement = panelElement.querySelector(`.${PanelSlider.REFERENCE.HTML_CLASS_NAME.PANEL_CONTENTS_CONTAINER}`);
 
@@ -684,7 +694,7 @@ class PanelSlider extends LandscapeComponent {
     panelElement.appendChild(panelContentsContainerElement);
 
     /**
-     * The panel contents `Element` (queried from the DOM)
+     * The panel contents `Element`
      */
     const _panelContentsElement = panelContentsContainerElement.querySelector(`.${PanelSlider.REFERENCE.HTML_CLASS_NAME.PANEL_CONTENTS}`);
 
@@ -767,7 +777,7 @@ class PanelSlider extends LandscapeComponent {
     });
 
     /**
-     * The panel contents `Element`
+     * The contents `Element` of the panel being rendered
      */
     const panelContentsElement = panelMetadata.element?.querySelector(`.${PanelSlider.REFERENCE.HTML_CLASS_NAME.PANEL_CONTENTS}`);
     if (
@@ -789,12 +799,13 @@ class PanelSlider extends LandscapeComponent {
       panelContentsElement.parentElement.replaceChild(imageElement, panelContentsElement.parentElement.firstChild);
     }
     else {
+      // abort if the specified `data` parameter value is not a non-empty string
       if (
         (typeof data !== 'string')
         || !core.utilities.validation.isNonEmptyString(data)
       ) throw new core.errors.TypeValidationError('data', String);
 
-      // insert the panel contents’ HTML into the panel element
+      // replace the panel contents element’s markup with the specified HTML
       core.webUtilities.injectHTML({
         debug: this.debug,
         html: data,
